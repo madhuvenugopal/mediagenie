@@ -25,6 +25,14 @@ public sealed class GridSettings
 
     public AudioMode AudioMode { get; set; } = AudioMode.MixAll;
 
+    /// <summary>
+    /// How much larger the actively-playing tile grows during sequential playback/export --
+    /// 1.5-1.75 means 50-75% larger than its normal grid cell, centered on the same spot.
+    /// Shared by SequencePlayerForm (live zoom) and SequentialGridFilterGraphBuilder (export
+    /// zoom) so the two stay in sync.
+    /// </summary>
+    public float ActiveTileZoom { get; set; } = 1.6f;
+
     /// <summary>Grid position whose audio is used when <see cref="AudioMode.SingleTile"/> is chosen.</summary>
     public int AudioTileIndex { get; set; }
 

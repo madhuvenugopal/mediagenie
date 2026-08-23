@@ -39,6 +39,9 @@ public static class SequentialGridFilterGraphBuilder
         int cellWidth = settings.CellWidth;
         int cellHeight = settings.CellHeight;
         int fps = Math.Max(1, settings.FrameRate);
+        float zoom = Math.Max(1f, settings.ActiveTileZoom);
+        int zoomWidth = MakeEven((int)Math.Round(cellWidth * zoom));
+        int zoomHeight = MakeEven((int)Math.Round(cellHeight * zoom));
 
         var filter = new StringBuilder();
         var videoParts = new List<string>();
@@ -57,11 +60,34 @@ public static class SequentialGridFilterGraphBuilder
             int row = clip.Index / settings.Columns;
             int column = clip.Index % settings.Columns;
             double start = cursor;
-            double holdAfterEnd = Math.Max(0, total - start - clip.DurationSeconds);
+            double end = start + clip.DurationSeconds;
+            double holdAfterEnd = Math.Max(0, total - end);
+            int zoomX = settings.CellX(column) - (zoomWidth - cellWidth) / 2;
+            int zoomY = settings.CellY(row) - (zoomHeight - cellHeight) / 2;
+
+            // While this clip is actually playing, it's shown zoomed in (bigger than its own
+            // cell, overlapping neighbors) instead of at normal tile size -- mirrors the zoom
+            // SequencePlayerForm applies live for the same tile while it plays.
+            videoParts.Add(string.Concat(
+                $"[{input}:v]",
+                $"scale={zoomWidth}:{zoomHeight}:force_original_aspect_ratio=decrease,",
+                $"pad={zoomWidth}:{zoomHeight}:(ow-iw)/2:(oh-ih)/2:color={Theme.LetterboxHex},",
+                $"setsar=1,fps={fps},format=rgba,",
+                $"setpts=PTS+{Num(start)}/TB",
+                $"[vz{input}];"));
+
+            videoParts.Add(string.Concat(
+                $"[base{i}][vz{input}]",
+                $"overlay=x={zoomX}:y={zoomY}",
+                $":enable='between(t,{Num(start)},{Num(end)})'",
+                ":eof_action=repeat:shortest=0",
+                $"[basez{i}];"));
 
             // Fit into the tile, keep the aspect ratio, letterbox the remainder, hold the
             // final frame once this clip ends, then shift the whole stream so it begins
-            // exactly when the previous clip's held tail ends.
+            // exactly when the previous clip's held tail ends. Only shown once the zoomed-in
+            // playback window above ends, so the tile shrinks back to normal size right as it
+            // settles on its frozen last frame.
             videoParts.Add(string.Concat(
                 $"[{input}:v]",
                 $"scale={cellWidth}:{cellHeight}:force_original_aspect_ratio=decrease,",
@@ -71,12 +97,12 @@ public static class SequentialGridFilterGraphBuilder
                 $"setpts=PTS+{Num(start)}/TB",
                 $"[v{input}];"));
 
-            // enable=... keeps the placeholder showing through until this tile's turn
-            // arrives; eof_action=repeat covers a decoder that runs a hair short.
+            // enable=... keeps the zoomed-in layer showing through until this tile has
+            // finished playing; eof_action=repeat covers a decoder that runs a hair short.
             videoParts.Add(string.Concat(
-                $"[base{i}][v{input}]",
+                $"[basez{i}][v{input}]",
                 $"overlay=x={settings.CellX(column)}:y={settings.CellY(row)}",
-                $":enable='gte(t,{Num(start)})'",
+                $":enable='gte(t,{Num(end)})'",
                 ":eof_action=repeat:shortest=0",
                 $"[base{i + 1}];"));
 
@@ -185,4 +211,7 @@ public static class SequentialGridFilterGraphBuilder
     /// <summary>adelay wants a whole number of milliseconds per channel.</summary>
     private static string Ms(double seconds) =>
         ((long)Math.Round(seconds * 1000.0)).ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>H.264-friendly filter chains stay happiest with even dimensions throughout.</summary>
+    private static int MakeEven(int value) => value % 2 == 0 ? value : value + 1;
 }

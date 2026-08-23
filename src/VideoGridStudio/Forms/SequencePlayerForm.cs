@@ -29,6 +29,8 @@ public sealed class SequencePlayerForm : Form
     private readonly SequentialGridPlayer _player;
 
     private readonly TableLayoutPanel _grid = new();
+    private readonly Panel _gridHost = new();
+    private readonly Dictionary<VideoCellControl, (int Column, int Row)> _zoomedCells = new();
     private readonly ToolStrip _toolStrip = new();
     private readonly StatusStrip _statusStrip = new();
     private readonly ToolStripStatusLabel _statusLabel = new();
@@ -176,16 +178,13 @@ public sealed class SequencePlayerForm : Form
         _grid.Padding = new Padding(10);
         _grid.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
 
-        var host = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = Theme.Canvas,
-            Padding = new Padding(0)
-        };
+        _gridHost.Dock = DockStyle.Fill;
+        _gridHost.BackColor = Theme.Canvas;
+        _gridHost.Padding = new Padding(0);
 
-        host.Controls.Add(_grid);
-        Controls.Add(host);
-        host.BringToFront();
+        _gridHost.Controls.Add(_grid);
+        Controls.Add(_gridHost);
+        _gridHost.BringToFront();
     }
 
     private void BuildStatusStrip()
@@ -207,6 +206,7 @@ public sealed class SequencePlayerForm : Form
     private void RebuildGrid(int rows, int columns)
     {
         _player.Stop();
+        ResetZoom();
 
         List<string?> existing = _slots.Select(s => s.FilePath).ToList();
         List<double> durations = _slots.Select(s => s.DurationSeconds).ToList();
@@ -379,6 +379,7 @@ public sealed class SequencePlayerForm : Form
     private void ClearAll()
     {
         _player.Stop();
+        ResetZoom();
 
         foreach (VideoCellControl cell in _cells)
         {
@@ -551,6 +552,7 @@ public sealed class SequencePlayerForm : Form
     private void StopPlayback()
     {
         _player.Stop();
+        ResetZoom();
         ResetTransport();
         UpdateStatus();
     }
@@ -565,9 +567,80 @@ public sealed class SequencePlayerForm : Form
         _progressBar.Value = 0;
     }
 
-    private void OnClipStarted(object? sender, int index) => _cells[index].RefreshSurface();
+    private void OnClipStarted(object? sender, int index)
+    {
+        _cells[index].RefreshSurface();
+        ZoomIn(_cells[index]);
+    }
 
-    private void OnClipFinished(object? sender, int index) => _cells[index].RefreshSurface();
+    private void OnClipFinished(object? sender, int index)
+    {
+        _cells[index].RefreshSurface();
+        ZoomOut(_cells[index]);
+    }
+
+    /// <summary>
+    /// Lifts the actively-playing tile out of the TableLayoutPanel and re-hosts it directly on
+    /// the grid host, sized larger and centered on its original spot, so it visually pops over
+    /// its neighbors while it plays -- mirrors the zoom SequentialGridFilterGraphBuilder bakes
+    /// into the exported video for the same clip.
+    /// </summary>
+    private void ZoomIn(VideoCellControl cell)
+    {
+        if (_zoomedCells.ContainsKey(cell))
+        {
+            return;
+        }
+
+        TableLayoutPanelCellPosition position = _grid.GetPositionFromControl(cell);
+
+        if (position.Column < 0 || position.Row < 0)
+        {
+            return;
+        }
+
+        var originalBounds = new Rectangle(_gridHost.PointToClient(_grid.PointToScreen(cell.Location)), cell.Size);
+
+        _grid.Controls.Remove(cell);
+        _gridHost.Controls.Add(cell);
+        cell.Dock = DockStyle.None;
+        cell.Bounds = InflateCentered(originalBounds, _settings.ActiveTileZoom);
+        cell.BringToFront();
+
+        _zoomedCells[cell] = (position.Column, position.Row);
+    }
+
+    /// <summary>Puts a zoomed-in tile back into its grid cell at normal size.</summary>
+    private void ZoomOut(VideoCellControl cell)
+    {
+        if (!_zoomedCells.TryGetValue(cell, out (int Column, int Row) position))
+        {
+            return;
+        }
+
+        _zoomedCells.Remove(cell);
+        _gridHost.Controls.Remove(cell);
+        cell.Dock = DockStyle.Fill;
+        _grid.Controls.Add(cell, position.Column, position.Row);
+    }
+
+    /// <summary>Restores every currently-zoomed tile, e.g. before the grid is rebuilt or torn down.</summary>
+    private void ResetZoom()
+    {
+        foreach (VideoCellControl cell in _zoomedCells.Keys.ToList())
+        {
+            ZoomOut(cell);
+        }
+    }
+
+    private static Rectangle InflateCentered(Rectangle bounds, float scale)
+    {
+        int newWidth = Math.Max(1, (int)Math.Round(bounds.Width * scale));
+        int newHeight = Math.Max(1, (int)Math.Round(bounds.Height * scale));
+        int centerX = bounds.X + bounds.Width / 2;
+        int centerY = bounds.Y + bounds.Height / 2;
+        return new Rectangle(centerX - newWidth / 2, centerY - newHeight / 2, newWidth, newHeight);
+    }
 
     private void OnPlaybackProgress(object? sender, PlaybackProgressEventArgs e)
     {
