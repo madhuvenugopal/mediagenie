@@ -969,9 +969,10 @@ public partial class MainWindow : Window
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
     {
         MessageBox.Show(
-            "MKV/MP4 Player\n\nWPF UI, LibVLC for video, NAudio for audio playback and microphone recording.\n" +
-            "A shared 5-band equalizer applies to both engines; settings are stored in the registry.",
-            "About MkvPlayer", MessageBoxButton.OK, MessageBoxImage.Information);
+            "Multimedia Player\n\nWPF UI, LibVLC for video, NAudio for audio playback and microphone recording.\n" +
+            "A shared 5-band equalizer applies to both engines; settings are stored in the registry.\n\n" +
+            "Design and Creation by Madhu Venugopal\nEmail: madhuvenugopal@yahoo.com",
+            "About Multimedia Player", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     // ----- VideoCreator (grid / sequential playback tools) -----

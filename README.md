@@ -192,3 +192,4 @@ src/VideoGridStudio/
   Sequentially, it's every clip's length added together.
 - The forms are built in code rather than with `.Designer.cs` files, so the Visual Studio designer
   surface will not open them — the layout lives in `BuildToolStrip` / `BuildGridHost` / `BuildLayout`.
+"# mediagenie" 

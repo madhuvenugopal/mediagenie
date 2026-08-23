@@ -3,10 +3,106 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
         xmlns:controls="clr-namespace:MkvPlayer.Controls"
-        Title="MKV/MP4 Player" Height="720" Width="1200" MinWidth="640" MinHeight="420"
+        Title="Multimedia Player" Height="720" Width="1200" MinWidth="640" MinHeight="420"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E"
         KeyDown="Window_KeyDown">
+    <Window.Resources>
+        <!-- Dark submenu popups: the default MenuItem template pulls its popup background
+             and hover highlight from OS theme brushes, so it ignores the app's dark theme
+             unless replaced outright. Two role-specific templates cover the top-level
+             headers (File/Tools/Help/VideoCreator, which own the Popup) and their child
+             submenu items. -->
+        <ControlTemplate x:Key="MenuItemTopLevelHeaderTemplate" TargetType="MenuItem">
+            <Border x:Name="Border" Background="{TemplateBinding Background}">
+                <Grid>
+                    <ContentPresenter Margin="{TemplateBinding Padding}" ContentSource="Header"
+                                       RecognizesAccessKey="True" VerticalAlignment="Center"/>
+                    <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsSubmenuOpen}"
+                           AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                        <Border Background="#252526" BorderBrush="#3F3F46" BorderThickness="1">
+                            <ScrollViewer CanContentScroll="True">
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                            </ScrollViewer>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="Border" Property="Background" Value="#3F3F46"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="MenuItemTopLevelItemTemplate" TargetType="MenuItem">
+            <Border x:Name="Border" Background="{TemplateBinding Background}">
+                <ContentPresenter Margin="{TemplateBinding Padding}" ContentSource="Header"
+                                   RecognizesAccessKey="True" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="Border" Property="Background" Value="#3F3F46"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="MenuItemSubmenuItemTemplate" TargetType="MenuItem">
+            <Border x:Name="Border" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                   VerticalAlignment="Center" Margin="20,0,8,0"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="Border" Property="Background" Value="#3F3F46"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Background" Value="#252526"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Template" Value="{StaticResource MenuItemSubmenuItemTemplate}"/>
+            <Style.Triggers>
+                <Trigger Property="Role" Value="TopLevelHeader">
+                    <Setter Property="Template" Value="{StaticResource MenuItemTopLevelHeaderTemplate}"/>
+                </Trigger>
+                <Trigger Property="Role" Value="TopLevelItem">
+                    <Setter Property="Template" Value="{StaticResource MenuItemTopLevelItemTemplate}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="Separator">
+            <Setter Property="Background" Value="#3F3F46"/>
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Margin" Value="4,4"/>
+        </Style>
+
+        <!-- VideoCreator gets its own accent-colored template so it visually stands out from
+             the plain File/Tools/Help headers, as a pill-shaped button rather than a flat
+             menu item; a lighter shade of the same accent on hover keeps it distinct there too. -->
+        <ControlTemplate x:Key="VideoCreatorMenuItemTemplate" TargetType="MenuItem">
+            <Border x:Name="Border" Background="{TemplateBinding Background}" CornerRadius="4" Margin="6,2">
+                <ContentPresenter Margin="{TemplateBinding Padding}" ContentSource="Header"
+                                   RecognizesAccessKey="True" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="Border" Property="Background" Value="#8657E8"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style x:Key="VideoCreatorMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="#6C3CE9"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="12,3"/>
+            <Setter Property="Template" Value="{StaticResource VideoCreatorMenuItemTemplate}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <!-- Subtle multimedia-themed background texture. Kept low-opacity, and every panel
              drawn on top uses a slightly translucent background (see tab content below) so
@@ -27,9 +123,9 @@
                     <MenuItem Header="_Preferences..." Click="PreferencesMenuItem_Click"/>
                 </MenuItem>
                 <MenuItem Header="_Help" Foreground="White">
-                    <MenuItem Header="_About MkvPlayer" Click="AboutMenuItem_Click"/>
+                    <MenuItem Header="_About Multimedia Player" Click="AboutMenuItem_Click"/>
                 </MenuItem>
-                <MenuItem Header="_VideoCreator" Foreground="White" Click="VideoCreatorMenuItem_Click"/>
+                <MenuItem Header="_VideoCreator" Style="{StaticResource VideoCreatorMenuItemStyle}" Click="VideoCreatorMenuItem_Click"/>
             </Menu>
 
             <!-- Shared transport bar: drives the Video tab's LibVLC player or the Audio tab's
