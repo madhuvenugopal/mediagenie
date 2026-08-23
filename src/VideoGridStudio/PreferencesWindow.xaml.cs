@@ -7,7 +7,7 @@ using MkvPlayer.Equalizer;
 namespace MkvPlayer;
 
 /// <summary>
-/// The Preferences window: the 5-band equalizer (shared by video and audio playback) and
+/// The Preferences window: the 7-band equalizer (shared by video and audio playback) and
 /// the default media folder setting. Every slider move calls back into <see cref="_onPreview"/>
 /// immediately so changes are heard live, not just after Save; Cancel restores whatever was
 /// active when the window was opened.
@@ -30,8 +30,8 @@ public partial class PreferencesWindow : Window
         _onPreview = onPreview;
         ResultSettings = currentSettings.Clone();
 
-        _bandSliders = new[] { Band0Slider, Band1Slider, Band2Slider, Band3Slider, Band4Slider };
-        _bandValueLabels = new[] { Band0ValueLabel, Band1ValueLabel, Band2ValueLabel, Band3ValueLabel, Band4ValueLabel };
+        _bandSliders = new[] { Band0Slider, Band1Slider, Band2Slider, Band3Slider, Band4Slider, Band5Slider, Band6Slider };
+        _bandValueLabels = new[] { Band0ValueLabel, Band1ValueLabel, Band2ValueLabel, Band3ValueLabel, Band4ValueLabel, Band5ValueLabel, Band6ValueLabel };
 
         EqEnabledCheckBox.IsChecked = ResultSettings.Enabled;
         PreampSlider.Value = ResultSettings.PreampDb;

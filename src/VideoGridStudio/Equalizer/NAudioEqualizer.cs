@@ -6,7 +6,7 @@ namespace MkvPlayer.Equalizer;
 
 /// <summary>
 /// An <see cref="ISampleProvider"/> that sits between the audio file reader and the output
-/// device on the Audio tab, applying preamp + a 5-band peaking-filter chain (one
+/// device on the Audio tab, applying preamp + a 7-band peaking-filter chain (one
 /// <see cref="BiQuadFilter"/> per band, per channel, so stereo material gets independent
 /// left/right filtering) driven by a shared <see cref="EqualizerSettings"/> instance.
 /// Call <see cref="ApplySettings"/> whenever the Preferences window changes a slider -- the

@@ -8,18 +8,19 @@ namespace MkvPlayer.Equalizer;
 /// </summary>
 public class EqualizerSettings
 {
-    /// <summary>Display labels for the 5 UI bands.</summary>
-    public static readonly string[] BandLabels = { "60 Hz", "310 Hz", "1 kHz", "3 kHz", "12 kHz" };
+    /// <summary>Display labels for the 7 UI bands.</summary>
+    public static readonly string[] BandLabels = { "60 Hz", "310 Hz", "600 Hz", "1 kHz", "3 kHz", "6 kHz", "12 kHz" };
 
     /// <summary>Center frequencies (Hz) used by the NAudio biquad chain for the Audio tab.</summary>
-    public static readonly float[] BandCenterFrequencies = { 60f, 310f, 1000f, 3000f, 12000f };
+    public static readonly float[] BandCenterFrequencies = { 60f, 310f, 600f, 1000f, 3000f, 6000f, 12000f };
 
     /// <summary>
     /// LibVLC's native equalizer has 10 fixed bands (60, 170, 310, 600, 1000, 3000, 6000,
-    /// 12000, 14000, 16000 Hz). Our 5 UI sliders map onto these 5 of them so the Video tab's
-    /// curve lines up with the Audio tab's; the other 5 LibVLC bands are left at 0 dB.
+    /// 12000, 14000, 16000 Hz). Our 7 UI sliders map onto 7 of them so the Video tab's
+    /// curve lines up with the Audio tab's; the other 3 LibVLC bands (170, 14000, 16000 Hz,
+    /// each close neighbors of a band we do use) are left at 0 dB.
     /// </summary>
-    public static readonly int[] LibVlcBandIndices = { 0, 2, 4, 5, 7 };
+    public static readonly int[] LibVlcBandIndices = { 0, 2, 3, 4, 5, 6, 7 };
 
     public const double MinGainDb = -12.0;
     public const double MaxGainDb = 12.0;

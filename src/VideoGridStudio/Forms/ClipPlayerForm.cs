@@ -11,7 +11,7 @@ using VideoGridStudio.Rendering;
 namespace VideoGridStudio.Forms;
 
 /// <summary>The main window: a Meet-style grid of tiles, a transport bar, and an export button.</summary>
-public sealed class MainForm : Form
+public sealed class ClipPlayerForm : Form
 {
     private static readonly (int Rows, int Columns)[] GridChoices =
     {
@@ -40,7 +40,7 @@ public sealed class MainForm : Form
     private string? _ffmpegPath;
     private string? _ffprobePath;
 
-    public MainForm(LibVLC libVlc)
+    public ClipPlayerForm(LibVLC libVlc)
     {
         _libVlc = libVlc;
         _appSettings = AppSettings.Load();

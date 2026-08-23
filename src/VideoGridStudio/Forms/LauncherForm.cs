@@ -71,7 +71,7 @@ public sealed class LauncherForm : Form
             Margin = new Padding(0, 0, 0, 10)
         };
         togetherButton.FlatAppearance.BorderColor = Theme.TileBorder;
-        togetherButton.Click += (_, _) => Launch(new MainForm(_libVlc));
+        togetherButton.Click += (_, _) => Launch(new ClipPlayerForm(_libVlc));
 
         var sequentialButton = new Button
         {

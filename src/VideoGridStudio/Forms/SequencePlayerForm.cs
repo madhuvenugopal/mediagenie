@@ -11,7 +11,7 @@ using VideoGridStudio.Rendering;
 namespace VideoGridStudio.Forms;
 
 /// <summary>
-/// The same Meet-style grid of tiles as MainForm, but clips play one after another in
+/// The same Meet-style grid of tiles as ClipPlayerForm, but clips play one after another in
 /// grid order instead of all starting together -- see SequentialGridPlayer.
 /// </summary>
 public sealed class SequencePlayerForm : Form

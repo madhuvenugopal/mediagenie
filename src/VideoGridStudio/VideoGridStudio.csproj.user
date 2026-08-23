@@ -5,6 +5,9 @@
     <Compile Update="Controls\VideoCellControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Update="Forms\ClipPlayerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\ExportDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -12,9 +15,6 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\LauncherForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\SequencePlayerForm.cs">

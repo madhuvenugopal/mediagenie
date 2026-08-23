@@ -3,7 +3,7 @@
 A Windows desktop app (C# / .NET 8, Visual Studio 2022) that combines two tools in one process:
 
 - **MkvPlayer** (WPF) — a video/audio player with three tabs (Video via LibVLC, Audio and Voice
-  Record via NAudio), a shared transport bar, and a 5-band equalizer. **This is what opens on
+  Record via NAudio), a shared transport bar, and a 7-band equalizer. **This is what opens on
   launch.**
 - **Video Grid Studio** (WinForms) — reachable from the player's **VideoCreator** menu — combines
   several video clips into one, in one of two modes:
@@ -139,7 +139,7 @@ src/VideoGridStudio/
   PreferencesWindow.xaml(.cs)      MkvPlayer: equalizer + default media folder settings
   MediaItem.cs                     MkvPlayer: one playlist entry (file path + display name)
   Audio/                           MkvPlayer: NAudio playback engine, recorder, .m3u playlists
-  Equalizer/                       MkvPlayer: shared 5-band model + per-engine adapters
+  Equalizer/                       MkvPlayer: shared 7-band model + per-engine adapters
   Settings/                        MkvPlayer: HKCU/HKLM registry read/write wrapper
   Models/
     GridSettings.cs                grid shape, output size, tile geometry, audio mode
@@ -170,7 +170,7 @@ src/VideoGridStudio/
   Forms/
     LauncherForm.cs                opened from MainWindow's VideoCreator menu: pick Play
                                     Together or Play Sequentially
-    MainForm.cs                    grid, toolbar, status bar -- clips start together
+    ClipPlayerForm.cs               grid, toolbar, status bar -- clips start together
     SequencePlayerForm.cs          same grid, toolbar, status bar -- clips play one after another
     ExportDialog.cs                output settings and export progress for BOTH modes
                                     (constructor's `sequential` flag picks which builder to call)

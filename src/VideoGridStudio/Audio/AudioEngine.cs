@@ -9,7 +9,7 @@ namespace MkvPlayer.Audio;
 /// NAudio-based playback engine used by the Audio tab (and for playing back a just-recorded
 /// clip on the Voice Record tab). The signal chain is:
 ///
-///   AudioFileReader -> NAudioEqualizer (shared 5-band EQ) -> SampleTapProvider (oscilloscope) -> WaveOutEvent
+///   AudioFileReader -> NAudioEqualizer (shared 7-band EQ) -> SampleTapProvider (oscilloscope) -> WaveOutEvent
 ///
 /// Each stage only does one job, which is what makes tapping the samples for the
 /// oscilloscope possible without disturbing playback or the equalizer.

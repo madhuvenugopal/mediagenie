@@ -123,13 +123,21 @@ public partial class MainWindow : Window
 
     private void LoadSettings()
     {
+        // A saved BandGainsDb may be shorter than today's band count (e.g. a 5-band value from
+        // before the equalizer grew to 7 bands) -- copy into a correctly-sized array instead of
+        // using the loaded one directly, so every band the app now expects to index safely
+        // exists, with any newly-added bands defaulting to 0 dB.
+        var savedBands = SettingsService.GetUserDoubleArray(
+            SettingsService.Keys.EqualizerBands,
+            new double[EqualizerSettings.BandCenterFrequencies.Length]);
+        var bandGains = new double[EqualizerSettings.BandCenterFrequencies.Length];
+        Array.Copy(savedBands, bandGains, Math.Min(savedBands.Length, bandGains.Length));
+
         _equalizerSettings = new EqualizerSettings
         {
             Enabled = SettingsService.GetUserBool(SettingsService.Keys.EqualizerEnabled, true),
             PreampDb = SettingsService.GetUserDouble(SettingsService.Keys.EqualizerPreamp, 0),
-            BandGainsDb = SettingsService.GetUserDoubleArray(
-                SettingsService.Keys.EqualizerBands,
-                new double[EqualizerSettings.BandCenterFrequencies.Length]),
+            BandGainsDb = bandGains,
         };
 
         var volume = SettingsService.GetUserDouble(SettingsService.Keys.Volume, 100);
@@ -970,7 +978,7 @@ public partial class MainWindow : Window
     {
         MessageBox.Show(
             "Multimedia Player\n\nWPF UI, LibVLC for video, NAudio for audio playback and microphone recording.\n" +
-            "A shared 5-band equalizer applies to both engines; settings are stored in the registry.\n\n" +
+            "A shared 7-band equalizer applies to both engines; settings are stored in the registry.\n\n" +
             "Design and Creation by Madhu Venugopal\nEmail: madhuvenugopal@yahoo.com",
             "About Multimedia Player", MessageBoxButton.OK, MessageBoxImage.Information);
     }
