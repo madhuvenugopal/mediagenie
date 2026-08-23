@@ -27,11 +27,11 @@ public sealed class GridSettings
 
     /// <summary>
     /// Fraction of the grid/canvas the actively-playing tile occupies while centered and
-    /// spotlighted (0.5 = 50%, so the other tiles stay visible behind it). Shared by
+    /// spotlighted (0.75 = 75%, so the other tiles stay visible behind it). Shared by
     /// SequencePlayerForm (live zoom) and SequentialGridFilterGraphBuilder (export zoom) so
     /// the two stay in sync.
     /// </summary>
-    public float SpotlightScale { get; set; } = 0.5f;
+    public float SpotlightScale { get; set; } = 0.75f;
 
     /// <summary>Grid position whose audio is used when <see cref="AudioMode.SingleTile"/> is chosen.</summary>
     public int AudioTileIndex { get; set; }
