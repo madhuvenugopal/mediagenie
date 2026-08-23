@@ -39,9 +39,13 @@ public static class SequentialGridFilterGraphBuilder
         int cellWidth = settings.CellWidth;
         int cellHeight = settings.CellHeight;
         int fps = Math.Max(1, settings.FrameRate);
-        float zoom = Math.Max(1f, settings.ActiveTileZoom);
-        int zoomWidth = MakeEven((int)Math.Round(cellWidth * zoom));
-        int zoomHeight = MakeEven((int)Math.Round(cellHeight * zoom));
+        int canvasWidth = settings.OutputWidth;
+        int canvasHeight = settings.OutputHeight;
+        float spotlight = Math.Clamp(settings.SpotlightScale, 0.1f, 1f);
+        int spotlightWidth = MakeEven((int)Math.Round(canvasWidth * spotlight));
+        int spotlightHeight = MakeEven((int)Math.Round(canvasHeight * spotlight));
+        int spotlightX = (canvasWidth - spotlightWidth) / 2;
+        int spotlightY = (canvasHeight - spotlightHeight) / 2;
 
         var filter = new StringBuilder();
         var videoParts = new List<string>();
@@ -62,23 +66,22 @@ public static class SequentialGridFilterGraphBuilder
             double start = cursor;
             double end = start + clip.DurationSeconds;
             double holdAfterEnd = Math.Max(0, total - end);
-            int zoomX = settings.CellX(column) - (zoomWidth - cellWidth) / 2;
-            int zoomY = settings.CellY(row) - (zoomHeight - cellHeight) / 2;
 
-            // While this clip is actually playing, it's shown zoomed in (bigger than its own
-            // cell, overlapping neighbors) instead of at normal tile size -- mirrors the zoom
+            // While this clip is actually playing, it's shown centered over the grid at
+            // settings.SpotlightScale of the canvas (the other tiles stay visible behind it)
+            // instead of just its own tile -- mirrors the same centered spotlight
             // SequencePlayerForm applies live for the same tile while it plays.
             videoParts.Add(string.Concat(
                 $"[{input}:v]",
-                $"scale={zoomWidth}:{zoomHeight}:force_original_aspect_ratio=decrease,",
-                $"pad={zoomWidth}:{zoomHeight}:(ow-iw)/2:(oh-ih)/2:color={Theme.LetterboxHex},",
+                $"scale={spotlightWidth}:{spotlightHeight}:force_original_aspect_ratio=decrease,",
+                $"pad={spotlightWidth}:{spotlightHeight}:(ow-iw)/2:(oh-ih)/2:color={Theme.LetterboxHex},",
                 $"setsar=1,fps={fps},format=rgba,",
                 $"setpts=PTS+{Num(start)}/TB",
                 $"[vz{input}];"));
 
             videoParts.Add(string.Concat(
                 $"[base{i}][vz{input}]",
-                $"overlay=x={zoomX}:y={zoomY}",
+                $"overlay=x={spotlightX}:y={spotlightY}",
                 $":enable='between(t,{Num(start)},{Num(end)})'",
                 ":eof_action=repeat:shortest=0",
                 $"[basez{i}];"));

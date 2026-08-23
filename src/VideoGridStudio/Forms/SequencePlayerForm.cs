@@ -581,9 +581,9 @@ public sealed class SequencePlayerForm : Form
 
     /// <summary>
     /// Lifts the actively-playing tile out of the TableLayoutPanel and re-hosts it directly on
-    /// the grid host, sized larger and centered on its original spot, so it visually pops over
-    /// its neighbors while it plays -- mirrors the zoom SequentialGridFilterGraphBuilder bakes
-    /// into the exported video for the same clip.
+    /// the grid host, centered over the grid at settings.SpotlightScale of its area (the other
+    /// tiles stay visible behind it) -- mirrors the same centered spotlight
+    /// SequentialGridFilterGraphBuilder bakes into the exported video for the same clip.
     /// </summary>
     private void ZoomIn(VideoCellControl cell)
     {
@@ -599,15 +599,23 @@ public sealed class SequencePlayerForm : Form
             return;
         }
 
-        var originalBounds = new Rectangle(_gridHost.PointToClient(_grid.PointToScreen(cell.Location)), cell.Size);
-
         _grid.Controls.Remove(cell);
         _gridHost.Controls.Add(cell);
         cell.Dock = DockStyle.None;
-        cell.Bounds = InflateCentered(originalBounds, _settings.ActiveTileZoom);
+        cell.Bounds = CenteredFraction(_grid.Bounds, _settings.SpotlightScale);
         cell.BringToFront();
 
         _zoomedCells[cell] = (position.Column, position.Row);
+    }
+
+    /// <summary>The rectangle of size <paramref name="fraction"/> of <paramref name="bounds"/>, centered within it.</summary>
+    private static Rectangle CenteredFraction(Rectangle bounds, float fraction)
+    {
+        int width = Math.Max(1, (int)Math.Round(bounds.Width * fraction));
+        int height = Math.Max(1, (int)Math.Round(bounds.Height * fraction));
+        int x = bounds.X + (bounds.Width - width) / 2;
+        int y = bounds.Y + (bounds.Height - height) / 2;
+        return new Rectangle(x, y, width, height);
     }
 
     /// <summary>Puts a zoomed-in tile back into its grid cell at normal size.</summary>
@@ -631,15 +639,6 @@ public sealed class SequencePlayerForm : Form
         {
             ZoomOut(cell);
         }
-    }
-
-    private static Rectangle InflateCentered(Rectangle bounds, float scale)
-    {
-        int newWidth = Math.Max(1, (int)Math.Round(bounds.Width * scale));
-        int newHeight = Math.Max(1, (int)Math.Round(bounds.Height * scale));
-        int centerX = bounds.X + bounds.Width / 2;
-        int centerY = bounds.Y + bounds.Height / 2;
-        return new Rectangle(centerX - newWidth / 2, centerY - newHeight / 2, newWidth, newHeight);
     }
 
     private void OnPlaybackProgress(object? sender, PlaybackProgressEventArgs e)
