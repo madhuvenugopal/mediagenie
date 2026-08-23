@@ -20,7 +20,7 @@ public sealed class MainForm : Form
 
     private readonly LibVLC _libVlc;
     private readonly AppSettings _appSettings;
-    private readonly GridSettings _settings = new();
+    private readonly GridSettings _settings = new() { Rows = 2, Columns = 3 };
     private readonly List<ClipSlot> _slots = new();
     private readonly List<VideoCellControl> _cells = new();
     private readonly GridPlayer _player;
@@ -103,7 +103,7 @@ public sealed class MainForm : Form
             _gridSizeCombo.Items.Add($"{columns} x {rows}");
         }
 
-        _gridSizeCombo.SelectedIndex = Array.FindIndex(GridChoices, c => c.Rows == 4 && c.Columns == 4);
+        _gridSizeCombo.SelectedIndex = Array.FindIndex(GridChoices, c => c.Rows == 2 && c.Columns == 3);
         _gridSizeCombo.SelectedIndexChanged += OnGridSizeChanged;
 
         _playButton.Text = "Play all";
