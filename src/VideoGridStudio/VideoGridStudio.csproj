@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- The app now starts on MkvPlayer's WPF window; the "VideoCreator" menu opens the
+         WinForms grid/sequential tools. Both UI frameworks in one project is a supported
+         combination for exactly this kind of interop. -->
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>VideoGridStudio</AssemblyName>
+    <RootNamespace>VideoGridStudio</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>AnyCPU;x64</Platforms>
+    <!-- LibVLC ships native binaries per-architecture; x64 keeps things predictable. -->
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Forms\FfmpegLocator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- UseWindowsForms's implicit global usings (System.Windows.Forms, System.Drawing) clash
+         with UseWPF's own types (Application, Color, Pen, DragEventArgs, KeyEventArgs...).
+         Every file that needs the WinForms/Drawing types already has its own explicit using,
+         so drop these two from the implicit set instead of polluting every WPF file. Removing
+         them also drops System.IO from the generated implicit-usings set in this combined
+         WPF+WinForms project, so it's re-added explicitly to keep every other file compiling. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- LibVLCSharp.WinForms backs the grid tiles (VideoCellControl); LibVLCSharp.WPF backs
+         MkvPlayer's own video tab (MainWindow's VideoViewControl). -->
+    <PackageReference Include="LibVLCSharp" Version="3.9.4" />
+    <PackageReference Include="LibVLCSharp.WinForms" Version="3.9.4" />
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.4" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+
+    <!-- MkvPlayer's Audio/Voice Record tabs use NAudio instead of LibVLC (see Audio/, Equalizer/). -->
+    <PackageReference Include="NAudio" Version="2.2.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Background image behind MkvPlayer's tab control (see Resources/background.png). -->
+    <Resource Include="Resources\background.png" />
+  </ItemGroup>
+
+</Project>

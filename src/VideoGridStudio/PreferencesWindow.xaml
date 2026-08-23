@@ -1,0 +1,99 @@
+<Window x:Class="MkvPlayer.PreferencesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Preferences" Height="480" Width="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#1E1E1E">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Equalizer -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Graphic Equalizer" Foreground="White" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+            <CheckBox x:Name="EqEnabledCheckBox" Content="Enabled" Foreground="White" Margin="20,0,0,0"
+                      VerticalAlignment="Center" Checked="EqControl_Changed" Unchecked="EqControl_Changed"/>
+            <Button x:Name="ResetEqButton" Content="Reset" Padding="8,2" Margin="20,0,0,0" Click="ResetEqButton_Click"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Background="#252526" BorderBrush="#3F3F46" BorderThickness="1" Padding="12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Preamp -->
+                <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Text="Preamp" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                    <Slider x:Name="PreampSlider" Orientation="Vertical" Height="220" Minimum="-12" Maximum="12" Value="0"
+                            TickFrequency="3" IsSnapToTickEnabled="False" ValueChanged="EqSlider_ValueChanged"
+                            Margin="0,8,0,8"/>
+                    <TextBlock x:Name="PreampValueLabel" Text="0.0 dB" Foreground="White" FontSize="11" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- 5 bands -->
+                <UniformGrid Grid.Column="1" Rows="1" Columns="5">
+                    <StackPanel x:Name="Band0Panel" Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="60 Hz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                        <Slider x:Name="Band0Slider" Orientation="Vertical" Height="220" Minimum="-12" Maximum="12" Value="0"
+                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,8"/>
+                        <TextBlock x:Name="Band0ValueLabel" Text="0.0 dB" Foreground="White" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Band1Panel" Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="310 Hz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                        <Slider x:Name="Band1Slider" Orientation="Vertical" Height="220" Minimum="-12" Maximum="12" Value="0"
+                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,8"/>
+                        <TextBlock x:Name="Band1ValueLabel" Text="0.0 dB" Foreground="White" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Band2Panel" Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="1 kHz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                        <Slider x:Name="Band2Slider" Orientation="Vertical" Height="220" Minimum="-12" Maximum="12" Value="0"
+                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,8"/>
+                        <TextBlock x:Name="Band2ValueLabel" Text="0.0 dB" Foreground="White" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Band3Panel" Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="3 kHz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                        <Slider x:Name="Band3Slider" Orientation="Vertical" Height="220" Minimum="-12" Maximum="12" Value="0"
+                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,8"/>
+                        <TextBlock x:Name="Band3ValueLabel" Text="0.0 dB" Foreground="White" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Band4Panel" Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="12 kHz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                        <Slider x:Name="Band4Slider" Orientation="Vertical" Height="220" Minimum="-12" Maximum="12" Value="0"
+                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,8"/>
+                        <TextBlock x:Name="Band4ValueLabel" Text="0.0 dB" Foreground="White" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </UniformGrid>
+            </Grid>
+        </Border>
+
+        <!-- Default media folder -->
+        <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,16,0,0">
+            <TextBlock Text="Default media folder" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="DefaultFolderTextBox" Grid.Column="0" Padding="6,4" VerticalContentAlignment="Center"/>
+                <Button Grid.Column="1" Content="Browse..." Padding="10,4" Margin="8,0,0,0" Click="BrowseFolderButton_Click"/>
+                <CheckBox x:Name="ApplyMachineWideCheckBox" Grid.Column="2" Content="Apply for all users"
+                          Foreground="White" VerticalAlignment="Center" Margin="12,0,0,0"
+                          ToolTip="Requires running as administrator. Falls back to just this user if not elevated."/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Save / Cancel -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Cancel" Width="90" Padding="8,4" Margin="0,0,8,0" Click="CancelButton_Click" IsCancel="True"/>
+            <Button Content="Save" Width="90" Padding="8,4" Click="SaveButton_Click" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
