@@ -36,6 +36,14 @@ public sealed class GridSettings
     /// <summary>Grid position whose audio is used when <see cref="AudioMode.SingleTile"/> is chosen.</summary>
     public int AudioTileIndex { get; set; }
 
+    /// <summary>
+    /// Optional music file laid under the whole export instead of the clips' own audio.
+    /// When set, this completely replaces whatever <see cref="AudioMode"/> would otherwise
+    /// select -- every clip's original track is muted, not mixed in alongside it. Looped if
+    /// shorter than the export, trimmed if longer.
+    /// </summary>
+    public string? BackgroundMusicPath { get; set; }
+
     public int CellCount => Rows * Columns;
 
     /// <summary>Width of one tile, after the outer margin and gutters are removed.</summary>

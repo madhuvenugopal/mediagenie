@@ -23,6 +23,10 @@ public sealed class ExportDialog : Form
     private readonly ComboBox _qualityBox = new();
     private readonly ComboBox _audioBox = new();
     private readonly List<(AudioMode Mode, int TileIndex)> _audioChoices = new();
+    private readonly TextBox _musicBox = new();
+    private readonly Button _musicBrowseButton = new();
+    private readonly Button _musicClearButton = new();
+    private string? _musicPath;
     private readonly NumericUpDown _gutterBox = new();
     private readonly Label _summaryLabel = new();
     private readonly ProgressBar _progressBar = new();
@@ -32,6 +36,9 @@ public sealed class ExportDialog : Form
 
     private CancellationTokenSource? _cancellation;
     private string? _finishedFile;
+
+    private const string NoMusicText = "(none - original clip audio used)";
+    private static readonly string[] MusicExtensions = { ".mp3", ".wav", ".wma", ".flac", ".aac", ".ogg", ".m4a" };
 
     public ExportDialog(
         GridSettings settings,
@@ -51,7 +58,7 @@ public sealed class ExportDialog : Form
         StartPosition = FormStartPosition.CenterParent;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(620, 400);
+        ClientSize = new Size(620, 560);
 
         BuildLayout();
         LoadDefaults();
@@ -99,6 +106,31 @@ public sealed class ExportDialog : Form
             box.SelectedIndexChanged += (_, _) => UpdateSummary();
         }
 
+        _musicBox.Dock = DockStyle.Fill;
+        _musicBox.ReadOnly = true;
+        _musicBox.Text = NoMusicText;
+
+        _musicBrowseButton.Text = "Browse...";
+        _musicBrowseButton.Width = 90;
+        _musicBrowseButton.Height = 26;
+        _musicBrowseButton.Click += (_, _) => BrowseForMusic();
+
+        _musicClearButton.Text = "Clear";
+        _musicClearButton.Width = 90;
+        _musicClearButton.Height = 26;
+        _musicClearButton.Margin = new Padding(0, 4, 0, 0);
+        _musicClearButton.Click += (_, _) => SetMusic(null);
+
+        var musicButtons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.TopDown,
+            AutoSize = true,
+            WrapContents = false
+        };
+        musicButtons.Controls.Add(_musicBrowseButton);
+        musicButtons.Controls.Add(_musicClearButton);
+
         _gutterBox.Minimum = 0;
         _gutterBox.Maximum = 40;
         _gutterBox.Value = 8;
@@ -109,7 +141,7 @@ public sealed class ExportDialog : Form
         _summaryLabel.Dock = DockStyle.Fill;
         _summaryLabel.ForeColor = Color.FromArgb(90, 90, 96);
         _summaryLabel.AutoSize = false;
-        _summaryLabel.Height = 54;
+        _summaryLabel.Height = 72;
 
         _progressBar.Dock = DockStyle.Fill;
         _progressBar.Maximum = 1000;
@@ -132,6 +164,7 @@ public sealed class ExportDialog : Form
         AddRow(layout, row++, "Frame rate", _fpsBox, null);
         AddRow(layout, row++, "Quality", _qualityBox, null);
         AddRow(layout, row++, "Audio", _audioBox, null);
+        AddRow(layout, row++, "Background music", _musicBox, musicButtons);
         AddRow(layout, row++, "Tile gap", _gutterBox, null);
         AddRow(layout, row++, string.Empty, _summaryLabel, null);
         AddRow(layout, row++, "Progress", _progressBar, null);
@@ -192,6 +225,7 @@ public sealed class ExportDialog : Form
         _gutterBox.Value = _settings.Gutter;
 
         BuildAudioChoices();
+        SetMusic(string.IsNullOrWhiteSpace(_settings.BackgroundMusicPath) ? null : _settings.BackgroundMusicPath);
 
         string folder = _appSettings.LastOutputFolder ??
                         Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
@@ -240,6 +274,36 @@ public sealed class ExportDialog : Form
         }
     }
 
+    private void BrowseForMusic()
+    {
+        string filter = "Audio files|*" + string.Join(";*", MusicExtensions) + "|All files|*.*";
+
+        using var dialog = new OpenFileDialog
+        {
+            Title = "Choose background music",
+            Filter = filter,
+            InitialDirectory = SafeDirectory(_musicPath ?? string.Empty)
+        };
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            SetMusic(dialog.FileName);
+        }
+    }
+
+    /// <summary>
+    /// Also flips the Audio dropdown's enabled state: once background music is chosen it
+    /// completely replaces the clips' own audio (see GridSettings.BackgroundMusicPath), so
+    /// whatever mix/single-tile/silent choice sits in that dropdown no longer applies.
+    /// </summary>
+    private void SetMusic(string? path)
+    {
+        _musicPath = string.IsNullOrWhiteSpace(path) ? null : path;
+        _musicBox.Text = _musicPath is null ? NoMusicText : Path.GetFileName(_musicPath);
+        _audioBox.Enabled = _musicPath is null;
+        UpdateSummary();
+    }
+
     private void ApplySettings()
     {
         (_, int width, int height) = ExportPresets.Resolutions[Math.Max(0, _resolutionBox.SelectedIndex)];
@@ -258,6 +322,8 @@ public sealed class ExportDialog : Form
             _settings.AudioMode = mode;
             _settings.AudioTileIndex = tile;
         }
+
+        _settings.BackgroundMusicPath = _musicPath;
     }
 
     private void UpdateSummary()
@@ -293,6 +359,12 @@ public sealed class ExportDialog : Form
                 $"Grid {_settings.Columns} x {_settings.Rows}, each tile {_settings.CellWidth} x {_settings.CellHeight} px." +
                 Environment.NewLine +
                 "Clips that end early keep showing their last frame until the longest one finishes.";
+        }
+
+        if (_musicPath is not null)
+        {
+            _summaryLabel.Text += Environment.NewLine +
+                $"Background music \"{Path.GetFileName(_musicPath)}\" replaces every clip's own audio (looped or trimmed to fit).";
         }
     }
 
@@ -486,6 +558,10 @@ public sealed class ExportDialog : Form
         _fpsBox.Enabled = !busy;
         _qualityBox.Enabled = !busy;
         _gutterBox.Enabled = !busy;
+        _musicBrowseButton.Enabled = !busy;
+        _musicClearButton.Enabled = !busy && _musicPath is not null;
+        if (busy) _audioBox.Enabled = false;
+        else if (_musicPath is null) _audioBox.Enabled = true;
         UseWaitCursor = busy;
 
         if (!busy)

@@ -43,6 +43,8 @@ public static class GridFilterGraphBuilder
         int cellWidth = settings.CellWidth;
         int cellHeight = settings.CellHeight;
         int fps = Math.Max(1, settings.FrameRate);
+        string? musicPath = string.IsNullOrWhiteSpace(settings.BackgroundMusicPath) ? null : settings.BackgroundMusicPath;
+        int musicInput = clips.Count + 1;
 
         var filter = new StringBuilder();
         var videoParts = new List<string>();
@@ -76,7 +78,9 @@ public static class GridFilterGraphBuilder
                 ":eof_action=repeat:shortest=0",
                 $"[base{i + 1}];"));
 
-            if (clip.HasAudio && WantsAudioFrom(settings, clip.Index))
+            // Background music completely replaces the clips' own audio, so there is no point
+            // extracting it -- skip straight past every clip's audio branch when it's set.
+            if (musicPath is null && clip.HasAudio && WantsAudioFrom(settings, clip.Index))
             {
                 audioLabels.Add($"[a{input}]");
 
@@ -97,23 +101,39 @@ public static class GridFilterGraphBuilder
 
         filter.Append($"[base{clips.Count}]format=yuv420p[vout];").Append('\n');
 
-        // A silent bed guarantees a full length audio track even when no clip has sound.
-        filter.Append(string.Concat(
-            $"anullsrc=channel_layout=stereo:sample_rate={AudioSampleRate},",
-            $"atrim=duration={Num(total)},asetpts=N/SR/TB[silence];")).Append('\n');
-
-        if (audioLabels.Count == 0)
+        if (musicPath is not null)
         {
-            filter.Append("[silence]anull[aout]");
+            // -stream_loop -1 on the input (see arguments below) repeats the file for as long
+            // as ffmpeg keeps reading; atrim here is what actually cuts that down to size, so
+            // music shorter than the export loops seamlessly and music longer than it just
+            // gets cut off -- either way every clip's own track is muted, not mixed in.
+            filter.Append(string.Concat(
+                $"[{musicInput}:a]",
+                $"aresample={AudioSampleRate},",
+                "aformat=sample_fmts=fltp:channel_layouts=stereo,",
+                $"atrim=duration={Num(total)},asetpts=N/SR/TB",
+                "[aout];")).Append('\n');
         }
         else
         {
-            // normalize=0 keeps each clip at its own level; the limiter catches the peaks
-            // that appear once several tiles are talking at once.
-            filter.Append("[silence]").Append(string.Concat(audioLabels))
-                  .Append($"amix=inputs={audioLabels.Count + 1}:normalize=0:dropout_transition=0")
-                  .Append(audioLabels.Count > 1 ? ",alimiter=limit=0.95:attack=5:release=50" : string.Empty)
-                  .Append("[aout]");
+            // A silent bed guarantees a full length audio track even when no clip has sound.
+            filter.Append(string.Concat(
+                $"anullsrc=channel_layout=stereo:sample_rate={AudioSampleRate},",
+                $"atrim=duration={Num(total)},asetpts=N/SR/TB[silence];")).Append('\n');
+
+            if (audioLabels.Count == 0)
+            {
+                filter.Append("[silence]anull[aout]");
+            }
+            else
+            {
+                // normalize=0 keeps each clip at its own level; the limiter catches the peaks
+                // that appear once several tiles are talking at once.
+                filter.Append("[silence]").Append(string.Concat(audioLabels))
+                      .Append($"amix=inputs={audioLabels.Count + 1}:normalize=0:dropout_transition=0")
+                      .Append(audioLabels.Count > 1 ? ",alimiter=limit=0.95:attack=5:release=50" : string.Empty)
+                      .Append("[aout]");
+            }
         }
 
         // Passed to FFmpeg as one -filter_complex argument rather than written to a script
@@ -143,6 +163,16 @@ public static class GridFilterGraphBuilder
         {
             arguments.Add("-i");
             arguments.Add(clip.FilePath!);
+        }
+
+        if (musicPath is not null)
+        {
+            // -stream_loop -1 must precede this specific -i to apply to it (it's a per-input
+            // option), not the clip inputs already added above.
+            arguments.Add("-stream_loop");
+            arguments.Add("-1");
+            arguments.Add("-i");
+            arguments.Add(musicPath);
         }
 
         arguments.AddRange(new[]
