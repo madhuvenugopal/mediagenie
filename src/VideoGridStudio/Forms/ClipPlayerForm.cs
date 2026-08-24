@@ -141,15 +141,27 @@ public sealed class ClipPlayerForm : Form
         };
         ffmpegButton.Click += (_, _) => ShowFfmpegSetup(alreadyFound: true);
 
+        var gridLabel = new ToolStripLabel("Grid")
+        {
+            BackColor = Color.WhiteSmoke,
+            ForeColor = Color.Black
+        };
+
+        var audioLabel = new ToolStripLabel("Audio")
+        {
+            BackColor = Color.WhiteSmoke,
+            ForeColor = Color.Black
+        };
+
         _toolStrip.Items.AddRange(new ToolStripItem[]
         {
             addButton,
             clearButton,
             new ToolStripSeparator(),
-            new ToolStripLabel("Grid"),
+            gridLabel,
             _gridSizeCombo,
             new ToolStripSeparator(),
-            new ToolStripLabel("Audio"),
+            audioLabel,
             _audioCombo,
             new ToolStripSeparator(),
             _playButton,
@@ -184,8 +196,14 @@ public sealed class ClipPlayerForm : Form
 
     private void BuildStatusStrip()
     {
+        // Explicit colors, not just left to inherit -- StatusStrip's BackColor is an ambient
+        // property, so leaving it unset meant it picked up the Form's dark Theme.Panel
+        // background while the text stayed dark too, making the whole bar unreadable.
+        _statusStrip.BackColor = Color.WhiteSmoke;
+
         _statusLabel.Spring = true;
         _statusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _statusLabel.ForeColor = Color.Black;
 
         _progressBar.Width = 220;
         _progressBar.Maximum = 1000;

@@ -145,6 +145,10 @@ public partial class MainWindow : Window
         _audioEngine.Volume = (float)(volume / 100.0);
         if (_mediaPlayer != null) _mediaPlayer.Volume = (int)volume;
 
+        var vocalLevel = SettingsService.GetUserDouble(SettingsService.Keys.VocalLevel, 100);
+        KaraokeSlider.Value = vocalLevel;
+        _audioEngine.VocalLevel = (float)(vocalLevel / 100.0);
+
         var width = SettingsService.GetUserDouble(SettingsService.Keys.WindowWidth, Width);
         var height = SettingsService.GetUserDouble(SettingsService.Keys.WindowHeight, Height);
         if (width >= MinWidth && height >= MinHeight)
@@ -160,6 +164,7 @@ public partial class MainWindow : Window
         SettingsService.SetUserDouble(SettingsService.Keys.EqualizerPreamp, _equalizerSettings.PreampDb);
         SettingsService.SetUserDoubleArray(SettingsService.Keys.EqualizerBands, _equalizerSettings.BandGainsDb);
         SettingsService.SetUserDouble(SettingsService.Keys.Volume, VolumeSlider.Value);
+        SettingsService.SetUserDouble(SettingsService.Keys.VocalLevel, KaraokeSlider.Value);
 
         if (WindowState == WindowState.Normal)
         {
@@ -202,8 +207,15 @@ public partial class MainWindow : Window
         TransportBar.Visibility = isVoiceRecordTab ? Visibility.Collapsed : Visibility.Visible;
         FullscreenButton.Visibility = ActiveTabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
 
+        // The karaoke effect only applies to the NAudio-driven Audio tab's sample chain --
+        // there's nothing for it to act on while the Video tab's LibVLC engine is active.
+        var karaokeVisibility = ActiveTabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+        KaraokeLabel.Visibility = karaokeVisibility;
+        KaraokeSlider.Visibility = karaokeVisibility;
+
         _suppressVolumeEvent = true;
         VolumeSlider.Value = ActiveTabIndex == 1 ? _audioEngine.Volume * 100 : _mediaPlayer?.Volume ?? 100;
+        VolumeLabel.Text = $"Vol {(int)VolumeSlider.Value}%";
         _suppressVolumeEvent = false;
 
         RefreshTransportDisplay();
@@ -776,7 +788,21 @@ public partial class MainWindow : Window
             _mediaPlayer.Volume = (int)e.NewValue;
         }
 
-        ShowOsd($"Volume {(int)e.NewValue}%");
+        // Shown as a static label next to the slider rather than the transient OSD -- unlike
+        // seek/skip feedback, volume has a persistent control right there to read it from, so
+        // it doesn't need to float a fading message over the video like the others do.
+        VolumeLabel.Text = $"Vol {(int)e.NewValue}%";
+    }
+
+    private void KaraokeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        // Same early-firing quirk as VolumeSlider_ValueChanged: this control's XAML sets
+        // Value="100", so InitializeComponent() raises ValueChanged before the window (and
+        // _audioEngine) is fully wired up.
+        if (!IsLoaded) return;
+
+        _audioEngine.VocalLevel = (float)(e.NewValue / 100.0);
+        ShowOsd(e.NewValue >= 100 ? "Vocals normal" : $"Vocals {(int)e.NewValue}%");
     }
 
     private void SeekSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e) => _isSeeking = true;

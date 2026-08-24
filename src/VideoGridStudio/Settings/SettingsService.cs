@@ -153,5 +153,6 @@ public static class SettingsService
         public const string EqualizerPreamp = "EqualizerPreamp";
         public const string EqualizerBands = "EqualizerBands";
         public const string LastActiveTab = "LastActiveTab";
+        public const string VocalLevel = "VocalLevel";
     }
 }

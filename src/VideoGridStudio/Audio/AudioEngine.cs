@@ -9,7 +9,8 @@ namespace MkvPlayer.Audio;
 /// NAudio-based playback engine used by the Audio tab (and for playing back a just-recorded
 /// clip on the Voice Record tab). The signal chain is:
 ///
-///   AudioFileReader -> NAudioEqualizer (shared 7-band EQ) -> SampleTapProvider (oscilloscope) -> WaveOutEvent
+///   AudioFileReader -> NAudioEqualizer (shared 7-band EQ) -> VocalReducerSampleProvider (karaoke)
+///     -> SampleTapProvider (oscilloscope) -> WaveOutEvent
 ///
 /// Each stage only does one job, which is what makes tapping the samples for the
 /// oscilloscope possible without disturbing playback or the equalizer.
@@ -19,7 +20,9 @@ public sealed class AudioEngine : IDisposable
     private readonly WaveOutEvent _output = new();
     private AudioFileReader? _reader;
     private NAudioEqualizer? _equalizer;
+    private VocalReducerSampleProvider? _vocalReducer;
     private SampleTapProvider? _tap;
+    private float _vocalLevel = 1f;
 
     // How many of our own Stop() calls are still owed a PlaybackStopped notification we
     // haven't seen yet. See RequestManualStop()/OnPlaybackStopped for why this has to be a
@@ -63,6 +66,21 @@ public sealed class AudioEngine : IDisposable
 
     public string? CurrentFilePath { get; private set; }
 
+    /// <summary>
+    /// 0.0 (vocals fully faded out, karaoke) - 1.0 (vocals untouched, normal playback).
+    /// Persists across tracks, same as <see cref="Volume"/>, since it's set on the engine
+    /// rather than on the per-track sample chain that Play() rebuilds.
+    /// </summary>
+    public float VocalLevel
+    {
+        get => _vocalLevel;
+        set
+        {
+            _vocalLevel = Math.Clamp(value, 0f, 1f);
+            if (_vocalReducer != null) _vocalReducer.Reduction = 1f - _vocalLevel;
+        }
+    }
+
     /// <summary>Loads a file and starts playing it immediately.</summary>
     public void Play(string filePath, EqualizerSettings equalizerSettings)
     {
@@ -71,7 +89,8 @@ public sealed class AudioEngine : IDisposable
         CurrentFilePath = filePath;
         _reader = new AudioFileReader(filePath);
         _equalizer = new NAudioEqualizer(_reader, equalizerSettings);
-        _tap = new SampleTapProvider(_equalizer);
+        _vocalReducer = new VocalReducerSampleProvider(_equalizer) { Reduction = 1f - _vocalLevel };
+        _tap = new SampleTapProvider(_vocalReducer);
         _tap.SamplesRead += (buffer, offset, count) => SamplesAvailable?.Invoke(buffer, offset, count);
 
         _output.Init(_tap);
@@ -160,6 +179,7 @@ public sealed class AudioEngine : IDisposable
         _reader?.Dispose();
         _reader = null;
         _equalizer = null;
+        _vocalReducer = null;
         _tap = null;
     }
 

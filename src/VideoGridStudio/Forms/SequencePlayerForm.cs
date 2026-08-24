@@ -201,8 +201,14 @@ public sealed class SequencePlayerForm : Form
 
     private void BuildStatusStrip()
     {
+        // Explicit colors, not just left to inherit -- StatusStrip's BackColor is an ambient
+        // property, so leaving it unset meant it picked up the Form's dark Theme.Panel
+        // background while the text stayed dark too, making the whole bar unreadable.
+        _statusStrip.BackColor = Color.WhiteSmoke;
+
         _statusLabel.Spring = true;
         _statusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _statusLabel.ForeColor = Color.Black;
 
         _progressBar.Width = 220;
         _progressBar.Maximum = 1000;

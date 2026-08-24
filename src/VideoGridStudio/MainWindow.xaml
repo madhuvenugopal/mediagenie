@@ -151,6 +151,8 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <Button x:Name="PrevButton" Grid.Column="0" Content="&#8676;" Click="PrevButton_Click" Padding="10,4" Margin="0,0,6,0" ToolTip="Previous"/>
@@ -161,9 +163,13 @@
                         <Button x:Name="NextButton" Grid.Column="5" Content="&#8677;" Click="NextButton_Click" Padding="10,4" Margin="0,0,14,0" ToolTip="Next"/>
                         <TextBlock x:Name="TimeLabel" Grid.Column="6" Text="00:00 / 00:00" Foreground="White" VerticalAlignment="Center" Margin="0,0,14,0"/>
                         <TextBlock x:Name="NowPlayingLabel" Grid.Column="7" Text="No file loaded" Foreground="#AAAAAA" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Grid.Column="8" Text="Vol" Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <Slider x:Name="VolumeSlider" Grid.Column="9" Width="100" Minimum="0" Maximum="100" Value="100" ValueChanged="VolumeSlider_ValueChanged" VerticalAlignment="Center" Margin="0,0,14,0"/>
-                        <Button x:Name="FullscreenButton" Grid.Column="10" Content="Fullscreen" Click="FullscreenButton_Click" Padding="12,4"/>
+                        <TextBlock x:Name="KaraokeLabel" Grid.Column="8" Text="Karaoke" Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0"
+                                   ToolTip="Fades vocals out of the current Audio track as you lower it (Audio tab only)"/>
+                        <Slider x:Name="KaraokeSlider" Grid.Column="9" Width="100" Minimum="0" Maximum="100" Value="100" ValueChanged="KaraokeSlider_ValueChanged" VerticalAlignment="Center" Margin="0,0,14,0"
+                                ToolTip="Fades vocals out of the current Audio track as you lower it (Audio tab only)"/>
+                        <TextBlock x:Name="VolumeLabel" Grid.Column="10" Text="Vol 100%" Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0" MinWidth="60"/>
+                        <Slider x:Name="VolumeSlider" Grid.Column="11" Width="100" Minimum="0" Maximum="100" Value="100" ValueChanged="VolumeSlider_ValueChanged" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                        <Button x:Name="FullscreenButton" Grid.Column="12" Content="Fullscreen" Click="FullscreenButton_Click" Padding="12,4"/>
                     </Grid>
                 </StackPanel>
             </Border>
