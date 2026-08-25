@@ -100,6 +100,12 @@ public static class PlaceholderRenderer
             return;
         }
 
+        if (!slot.HasClip)
+        {
+            DrawEmptyCameraTile(g, slot, rect);
+            return;
+        }
+
         // Circular "avatar" with the slot number, like a participant tile with the camera off.
         int avatarSize = Math.Max(24, Math.Min(rect.Width, rect.Height) / 3);
         var avatarRect = new Rectangle(
@@ -172,6 +178,89 @@ public static class PlaceholderRenderer
         }
     }
 
+    /// <summary>
+    /// Drawn for a slot that has no clip assigned yet: a video-camera-off glyph (a camcorder
+    /// body + viewfinder flap with a diagonal "no signal" slash through it), like a
+    /// video-call tile whose camera is off, instead of a filename caption reading "Empty slot".
+    /// </summary>
+    private static void DrawEmptyCameraTile(Graphics g, ClipSlot slot, Rectangle rect)
+    {
+        int iconSize = Math.Max(28, Math.Min(rect.Width, rect.Height) / 3);
+        var iconRect = new RectangleF(
+            rect.X + ((rect.Width - iconSize) / 2f),
+            rect.Y + ((rect.Height - iconSize) / 2f) - (rect.Height / 14f),
+            iconSize,
+            iconSize);
+
+        float bodyW = iconRect.Width * 0.60f;
+        float bodyH = iconRect.Height * 0.56f;
+        var bodyRect = new RectangleF(
+            iconRect.X,
+            iconRect.Y + ((iconRect.Height - bodyH) / 2f),
+            bodyW,
+            bodyH);
+
+        using (var bodyPath = RoundedRectF(bodyRect, Math.Min(bodyW, bodyH) * 0.22f))
+        using (var bodyBrush = new SolidBrush(Theme.Avatar))
+        {
+            g.FillPath(bodyBrush, bodyPath);
+        }
+
+        // Camcorder viewfinder flap, jutting right from the body.
+        var flap = new[]
+        {
+            new PointF(bodyRect.Right - (bodyRect.Width * 0.06f), bodyRect.Y + (bodyRect.Height * 0.20f)),
+            new PointF(iconRect.Right, bodyRect.Y + (bodyRect.Height * 0.06f)),
+            new PointF(iconRect.Right, bodyRect.Bottom - (bodyRect.Height * 0.06f)),
+            new PointF(bodyRect.Right - (bodyRect.Width * 0.06f), bodyRect.Bottom - (bodyRect.Height * 0.20f)),
+        };
+        using (var flapBrush = new SolidBrush(Theme.Avatar))
+        {
+            g.FillPolygon(flapBrush, flap);
+        }
+
+        // Diagonal "off" slash through the whole glyph.
+        using (var slashPen = new Pen(Theme.MutedText, Math.Max(2.5f, iconRect.Width * 0.11f))
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        })
+        {
+            g.DrawLine(
+                slashPen,
+                iconRect.X - (iconRect.Width * 0.04f), iconRect.Y - (iconRect.Height * 0.04f),
+                iconRect.Right + (iconRect.Width * 0.04f), iconRect.Bottom + (iconRect.Height * 0.04f));
+        }
+
+        float subSize = Math.Max(8f, Math.Min(rect.Width, rect.Height) * 0.054f);
+        var subRect = new RectangleF(
+            rect.X + (rect.Width * 0.06f),
+            iconRect.Bottom + (rect.Height * 0.06f),
+            rect.Width * 0.88f,
+            subSize * 1.6f);
+
+        using (var subFont = new Font("Segoe UI", subSize, FontStyle.Regular, GraphicsUnit.Pixel))
+        using (var subBrush = new SolidBrush(Theme.MutedText))
+        using (var format = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Near,
+            Trimming = StringTrimming.EllipsisCharacter,
+            FormatFlags = StringFormatFlags.NoWrap
+        })
+        {
+            g.DrawString("Drop a video here", subFont, subBrush, subRect, format);
+        }
+
+        // Small, unobtrusive slot index in the corner -- enough to tell tiles apart while empty.
+        float badgeSize = Math.Max(7f, subSize * 0.9f);
+        using (var badgeFont = new Font("Segoe UI", badgeSize, FontStyle.Regular, GraphicsUnit.Pixel))
+        using (var badgeBrush = new SolidBrush(Theme.MutedText))
+        {
+            g.DrawString((slot.Index + 1).ToString(), badgeFont, badgeBrush, rect.X + (rect.Width * 0.05f), rect.Y + (rect.Height * 0.035f));
+        }
+    }
+
     /// <summary>Fits an image inside a rect, aspect ratio preserved, centred.</summary>
     private static void DrawLetterboxed(Graphics g, Image image, Rectangle rect)
     {
@@ -186,6 +275,25 @@ public static class PlaceholderRenderer
     {
         var path = new GraphicsPath();
         int d = radius * 2;
+
+        if (d <= 0 || d > rect.Width || d > rect.Height)
+        {
+            path.AddRectangle(rect);
+            return path;
+        }
+
+        path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+        path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+        path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
+    private static GraphicsPath RoundedRectF(RectangleF rect, float radius)
+    {
+        var path = new GraphicsPath();
+        float d = radius * 2;
 
         if (d <= 0 || d > rect.Width || d > rect.Height)
         {
