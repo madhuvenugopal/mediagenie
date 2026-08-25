@@ -28,6 +28,7 @@ public sealed class ExportDialog : Form
     private readonly Button _musicClearButton = new();
     private string? _musicPath;
     private readonly NumericUpDown _gutterBox = new();
+    private readonly CheckBox _statusModeCheck = new() { Text = "Mobile status / short video (portrait, clips stacked one below another)" };
     private readonly Label _summaryLabel = new();
     private readonly ProgressBar _progressBar = new();
     private readonly Label _statusLabel = new();
@@ -58,7 +59,7 @@ public sealed class ExportDialog : Form
         StartPosition = FormStartPosition.CenterParent;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(620, 560);
+        ClientSize = new Size(620, sequential ? 560 : 594);
 
         BuildLayout();
         LoadDefaults();
@@ -138,6 +139,12 @@ public sealed class ExportDialog : Form
         _gutterBox.Width = 70;
         _gutterBox.ValueChanged += (_, _) => UpdateSummary();
 
+        // Only offered for the Play Together export -- Play Sequentially's clips already take
+        // turns filling the whole canvas, so there is no separate "stack them" layout for it.
+        _statusModeCheck.Dock = DockStyle.Fill;
+        _statusModeCheck.AutoSize = true;
+        _statusModeCheck.CheckedChanged += (_, _) => UpdateSummary();
+
         _summaryLabel.Dock = DockStyle.Fill;
         _summaryLabel.ForeColor = Color.FromArgb(90, 90, 96);
         _summaryLabel.AutoSize = false;
@@ -166,6 +173,12 @@ public sealed class ExportDialog : Form
         AddRow(layout, row++, "Audio", _audioBox, null);
         AddRow(layout, row++, "Background music", _musicBox, musicButtons);
         AddRow(layout, row++, "Tile gap", _gutterBox, null);
+
+        if (!_sequential)
+        {
+            AddRow(layout, row++, string.Empty, _statusModeCheck, null);
+        }
+
         AddRow(layout, row++, string.Empty, _summaryLabel, null);
         AddRow(layout, row++, "Progress", _progressBar, null);
         AddRow(layout, row++, string.Empty, _statusLabel, null);
@@ -304,17 +317,32 @@ public sealed class ExportDialog : Form
         UpdateSummary();
     }
 
+    /// <summary>True only for the Play Together dialog with the checkbox ticked -- Play
+    /// Sequentially never offers this, since the checkbox itself isn't in its layout.</summary>
+    private bool StatusModeActive => !_sequential && _statusModeCheck.Checked;
+
     private void ApplySettings()
     {
         (_, int width, int height) = ExportPresets.Resolutions[Math.Max(0, _resolutionBox.SelectedIndex)];
         (_, int crf, string preset) = ExportPresets.Qualities[Math.Max(0, _qualityBox.SelectedIndex)];
 
-        _settings.OutputWidth = width;
-        _settings.OutputHeight = height;
+        // A "status" video is portrait, so the chosen resolution's dimensions are swapped
+        // (1920x1080 -> 1080x1920) rather than offering a whole separate preset list.
+        bool statusMode = StatusModeActive;
+        _settings.OutputWidth = statusMode ? height : width;
+        _settings.OutputHeight = statusMode ? width : height;
         _settings.FrameRate = int.Parse((string)_fpsBox.SelectedItem!, CultureInfo.InvariantCulture);
         _settings.Crf = crf;
         _settings.Preset = preset;
         _settings.Gutter = (int)_gutterBox.Value;
+
+        if (statusMode)
+        {
+            // One clip per row, in grid order, so they play back stacked top to bottom --
+            // exactly the "one below another" layout a phone-width status video needs.
+            _settings.Columns = 1;
+            _settings.Rows = Math.Max(1, _slots.Count(s => s.HasClip));
+        }
 
         if (_audioBox.SelectedIndex >= 0 && _audioBox.SelectedIndex < _audioChoices.Count)
         {
@@ -347,6 +375,19 @@ public sealed class ExportDialog : Form
                 $"Grid {_settings.Columns} x {_settings.Rows}, each tile {_settings.CellWidth} x {_settings.CellHeight} px." +
                 Environment.NewLine +
                 "Each tile shows its placeholder until its turn, then holds its last frame once it's done.";
+        }
+        else if (StatusModeActive)
+        {
+            double longest = durations.Count > 0 ? durations.Max() : 0;
+
+            _summaryLabel.Text =
+                $"{durations.Count} clip(s) stacked one below another, all starting together  ·  " +
+                $"finished video is {FormatClock(longest)} long (as long as the longest clip)." +
+                Environment.NewLine +
+                $"Portrait {_settings.OutputWidth} x {_settings.OutputHeight}, each row {_settings.CellWidth} x {_settings.CellHeight} px " +
+                "-- sized to fit a phone screen, like a WhatsApp status or short-video post." +
+                Environment.NewLine +
+                "Clips that end early keep showing their last frame until the longest one finishes.";
         }
         else
         {
@@ -404,6 +445,24 @@ public sealed class ExportDialog : Form
 
         ApplySettings();
 
+        // Status mode packs only the filled tiles into rows 0..N-1, in grid order, so there
+        // are no blank placeholder rows wasting space on the phone-width canvas -- an empty
+        // slot between two filled ones just disappears rather than exporting as a gap.
+        // AudioTileIndex was chosen against the ORIGINAL grid position, so it has to move
+        // with its clip to the reindexed position for "only this tile's audio" to still work.
+        IReadOnlyList<ClipSlot> exportSlots = _slots;
+
+        if (StatusModeActive)
+        {
+            (exportSlots, Dictionary<int, int> indexMap) = BuildStatusSlots(_slots);
+
+            if (_settings.AudioMode == AudioMode.SingleTile &&
+                indexMap.TryGetValue(_settings.AudioTileIndex, out int mappedIndex))
+            {
+                _settings.AudioTileIndex = mappedIndex;
+            }
+        }
+
         string workFolder = Path.Combine(Path.GetTempPath(), "VideoGridStudio", "export");
         Directory.CreateDirectory(workFolder);
         string backgroundPath = Path.Combine(workFolder, "grid-background.png");
@@ -415,7 +474,7 @@ public sealed class ExportDialog : Form
         try
         {
             // Placeholders are baked once into a full-frame PNG that sits under every clip.
-            var placeholderSlots = _slots.Select(s =>
+            var placeholderSlots = exportSlots.Select(s =>
             {
                 var copy = new ClipSlot(s.Index);
 
@@ -456,7 +515,7 @@ public sealed class ExportDialog : Form
 
             GridCompositionPlan plan = _sequential
                 ? SequentialGridFilterGraphBuilder.Build(_settings, _slots, backgroundPath, output)
-                : GridFilterGraphBuilder.Build(_settings, _slots, backgroundPath, output);
+                : GridFilterGraphBuilder.Build(_settings, exportSlots, backgroundPath, output);
 
             var progress = new Progress<ExportProgress>(p =>
             {
@@ -498,6 +557,33 @@ public sealed class ExportDialog : Form
             _cancellation = null;
             SetBusy(false);
         }
+    }
+
+    /// <summary>
+    /// Compacts the filled slots into rows 0..N-1, in grid order, with a fresh <see cref="ClipSlot"/>
+    /// per clip (Index is constructor-only, so moving one means copying it). Paired with
+    /// <see cref="GridSettings.Columns"/> = 1, row N is clip N -- one clip per row, stacked
+    /// top to bottom with nothing left over for an unfilled tile to leave a gap in.
+    /// </summary>
+    private static (IReadOnlyList<ClipSlot> Slots, Dictionary<int, int> OldToNewIndex) BuildStatusSlots(IReadOnlyList<ClipSlot> source)
+    {
+        List<ClipSlot> filled = source.Where(s => s.HasClip).OrderBy(s => s.Index).ToList();
+        var result = new List<ClipSlot>(filled.Count);
+        var indexMap = new Dictionary<int, int>();
+
+        for (int i = 0; i < filled.Count; i++)
+        {
+            ClipSlot original = filled[i];
+            var copy = new ClipSlot(i);
+            copy.Assign(original.FilePath!);
+            copy.DurationSeconds = original.DurationSeconds;
+            copy.HasAudio = original.HasAudio;
+            copy.State = original.State;
+            result.Add(copy);
+            indexMap[original.Index] = i;
+        }
+
+        return (result, indexMap);
     }
 
     /// <summary>
@@ -558,6 +644,7 @@ public sealed class ExportDialog : Form
         _fpsBox.Enabled = !busy;
         _qualityBox.Enabled = !busy;
         _gutterBox.Enabled = !busy;
+        _statusModeCheck.Enabled = !busy;
         _musicBrowseButton.Enabled = !busy;
         _musicClearButton.Enabled = !busy && _musicPath is not null;
         if (busy) _audioBox.Enabled = false;
