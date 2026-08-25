@@ -1,4 +1,4 @@
-# Revision 5 -- Winamp-style transport chrome, LED spectrum analyzer, and a common mute/EQ button
+# Revision 5 -- Winamp-style transport chrome, LED spectrum analyzer, click-to-play tiles, and a common mute/EQ button
 
 Changes made to `VideoGridStudio` in this revision, in the order they were made. Every step was
 verified with `dotnet build` after each change; most of the visual work was additionally verified
@@ -102,6 +102,43 @@ wrote empty strings in place of the two Unicode escapes for the mute icon (`"\uE
 Caught both times by re-reading the file after editing rather than trusting the edit result; fixed
 cleanly by replacing the exact line by line number.
 
+## 5. Click a tile to play its clip in place
+
+**Files:** `Controls/VideoCellControl.cs`, `Forms/ClipPlayerForm.cs`, `Forms/SequencePlayerForm.cs`
+
+`VideoCellControl` gained a `PlayRequested` event, raised on a plain left-click (double-click still
+opens the file browser, unchanged). Both `ClipPlayerForm` and `SequencePlayerForm` wire it to a new
+`OnCellPlayRequested`/`StopPreview` pair that plays a single tile's clip in place using its own
+`MediaPlayer`, independent of `GridPlayer`/`SequentialGridPlayer`. It is a no-op while the grid-wide
+player is running (`_player.IsRunning`), since swapping a tile's video surface out from under an
+active `GridPlayer`/`SequentialGridPlayer` would leave it holding a dangling player reference.
+Clicking the tile already previewing stops it; clicking a different one switches to that tile
+instead. At most one tile previews at a time.
+
+`StopPreview()` is called everywhere a previewing tile's clip could change out from under it or
+conflict with something else claiming the grid: `RebuildGrid`, `ClearAll`, `ClearCell` (when
+clearing the previewing tile), `AssignClipAsync`/`BrowseForCellAsync` (when reassigning the
+previewing tile), `StartPlayback`, `ShowExportDialog`, and `OnFormClosing`.
+
+## 6. Fixed: Grid/Audio/Vol toolbar labels reading as unreadable dark-on-dark
+
+**File:** `Rendering/WinampToolStripRenderer.cs`
+
+**Symptom:** after the Winamp toolbar restyle in Section 1, the "Grid", "Audio", and "Vol" labels
+-- explicitly set to a light `WhiteSmoke` background with black text for contrast, per
+`ClipPlayerForm`/`SequencePlayerForm`'s own code -- rendered dark instead, unreadable against the
+dark toolbar around them.
+
+**Root cause:** `WinampToolStripRenderer` (a `ToolStripProfessionalRenderer` subclass) never
+overrode `OnRenderLabelBackground`. The base implementation doesn't paint a `ToolStripLabel`'s
+explicit `BackColor`, so the label's own light background never actually got drawn -- the dark
+toolstrip gradient painted underneath by `OnRenderToolStripBackground` showed straight through
+behind the (correctly black) text, reading as a dark, low-contrast label.
+
+**Fix:** added an `OnRenderLabelBackground` override that fills the label's bounds with its own
+`BackColor` whenever that color isn't the ambient default, falling back to the base behavior
+otherwise. Since both forms share this one renderer, the fix applies to both at once.
+
 ## Validated
 
 - `dotnet build src/VideoGridStudio/VideoGridStudio.csproj -c Debug` -- run after every change in
@@ -120,11 +157,22 @@ cleanly by replacing the exact line by line number.
   `Loaded`) via `RenderTargetBitmap` in a standalone WPF harness -- confirmed slider groove/fill/
   thumb rendering at several values including a disabled slider, both mute-icon states, and the EQ
   button's placement and chrome.
-- **Not run interactively this revision:** no click-through of the actual running app for any of
+- **Label background fix (Section 6):** re-ran the same Section 1 WinForms harness against the
+  rebuilt DLL -- confirmed "Grid", "Audio", and "Vol" now render with a light background and dark
+  text instead of dark-on-dark.
+- **Click-to-play (Section 5):** not verified visually or interactively -- this session had no
+  video file to load and no way to drive real mouse clicks against a native WinForms window, so
+  this is build-verified only (`dotnet build` succeeded, 0 errors). Worth a manual pass before
+  relying on it, especially: clicking a tile immediately after grid-wide playback stops, clicking
+  while a different tile is already previewing, and reassigning/clearing the previewing tile's clip
+  mid-preview.
+- **Not run interactively this revision:** no click-through of the actual running app for most of
   the above -- this session had no way to drive a native WinForms/WPF window (the available browser
   automation tools only handle web content), so the harness renders substitute for real user
-  interaction. Worth a manual pass before relying on any of this, particularly: dragging the new
-  sliders (only static values were rendered), toggling mute/EQ from the real menu bar layout at
-  different window widths, and the spectrum analyzer against real music rather than synthetic
-  tones (its `* 6f` energy normalization is a heuristic, same as the existing fire visualization's
-  RMS scaling, and hasn't been ear-and-eye-checked against an actual track).
+  interaction except where noted. Worth a manual pass before relying on any of this, particularly:
+  dragging the new sliders (only static values were rendered), toggling mute/EQ from the real menu
+  bar layout at different window widths, and the spectrum analyzer against real music rather than
+  synthetic tones (its `* 6f` energy normalization is a heuristic, same as the existing fire
+  visualization's RMS scaling, and hasn't been ear-and-eye-checked against an actual track). Also
+  worth noting: a running `VideoGridStudio.exe` instance blocked the build partway through this
+  revision (locked output file) and had to be closed with the user's OK before work could continue.
