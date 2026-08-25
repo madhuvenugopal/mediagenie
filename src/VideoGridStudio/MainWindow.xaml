@@ -294,13 +294,21 @@
                     <MenuItem Header="_VideoCreator" Style="{StaticResource VideoCreatorMenuItemStyle}" Click="VideoCreatorMenuItem_Click"/>
                 </Menu>
 
-                <!-- Common mute toggle: applies to whichever engine (LibVLC video or NAudio audio)
-                     is behind the currently-active tab, same as VolumeSlider/KaraokeSlider already
-                     do; see MuteButton_Click. -->
-                <Button x:Name="MuteButton" Grid.Column="1" Click="MuteButton_Click" Padding="8,2"
-                        Margin="4,3,8,3" VerticalAlignment="Center" ToolTip="Mute">
-                    <TextBlock x:Name="MuteButtonIcon" Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
-                </Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,3,8,3">
+                    <!-- Opens the same Preferences window the Tools menu does; the equalizer
+                         lives there alongside the default media folder setting, so this is just
+                         a one-click shortcut to it, styled like a classic Winamp "EQ" button. -->
+                    <Button x:Name="EqualizerButton" Click="PreferencesMenuItem_Click" Padding="8,2"
+                            Margin="0,0,4,0" VerticalAlignment="Center" ToolTip="Equalizer" Content="EQ"/>
+
+                    <!-- Common mute toggle: applies to whichever engine (LibVLC video or NAudio
+                         audio) is behind the currently-active tab, same as VolumeSlider/KaraokeSlider
+                         already do; see MuteButton_Click. -->
+                    <Button x:Name="MuteButton" Click="MuteButton_Click" Padding="8,2"
+                            VerticalAlignment="Center" ToolTip="Mute">
+                        <TextBlock x:Name="MuteButtonIcon" Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                    </Button>
+                </StackPanel>
             </Grid>
 
             <!-- Shared transport bar: drives the Video tab's LibVLC player or the Audio tab's
