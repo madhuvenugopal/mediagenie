@@ -30,7 +30,10 @@ public sealed class SequencePlayerForm : Form
 
     private readonly TableLayoutPanel _grid = new();
     private readonly Panel _gridHost = new();
-    private readonly Dictionary<VideoCellControl, (int Column, int Row)> _zoomedCells = new();
+    private readonly Dictionary<VideoCellControl, (int Column, int Row, Rectangle OriginalBounds)> _zoomedCells = new();
+    private readonly List<BoundsAnimation> _zoomAnimations = new();
+    private readonly System.Windows.Forms.Timer _zoomAnimationTimer = new() { Interval = 16 };
+    private const int ZoomAnimationDurationMs = 280;
     private readonly ToolStrip _toolStrip = new();
     private readonly StatusStrip _statusStrip = new();
     private readonly ToolStripStatusLabel _statusLabel = new();
@@ -73,6 +76,8 @@ public sealed class SequencePlayerForm : Form
         BuildToolStrip();
         BuildGridHost();
         BuildStatusStrip();
+
+        _zoomAnimationTimer.Tick += OnZoomAnimationTick;
 
         _player = new SequentialGridPlayer(_libVlc, this);
         _player.ClipStarted += OnClipStarted;
@@ -733,9 +738,10 @@ public sealed class SequencePlayerForm : Form
 
     /// <summary>
     /// Lifts the actively-playing tile out of the TableLayoutPanel and re-hosts it directly on
-    /// the grid host, centered over the grid at settings.SpotlightScale of its area (the other
-    /// tiles stay visible behind it) -- mirrors the same centered spotlight
-    /// SequentialGridFilterGraphBuilder bakes into the exported video for the same clip.
+    /// the grid host, animating it from its grid-cell rectangle up to settings.SpotlightScale of
+    /// the grid's area, centered (the other tiles stay visible behind it) -- the same centered
+    /// spotlight SequentialGridFilterGraphBuilder bakes into the exported video for the same
+    /// clip, just eased in here instead of appearing instantly.
     /// </summary>
     private void ZoomIn(VideoCellControl cell)
     {
@@ -751,13 +757,21 @@ public sealed class SequencePlayerForm : Form
             return;
         }
 
+        // The tile's on-screen rectangle before reparenting, translated from _grid's coordinate
+        // space into _gridHost's -- both the animation's start point and what ZoomOut later
+        // animates back to.
+        var originalBounds = new Rectangle(_grid.Left + cell.Left, _grid.Top + cell.Top, cell.Width, cell.Height);
+
         _grid.Controls.Remove(cell);
         _gridHost.Controls.Add(cell);
         cell.Dock = DockStyle.None;
-        cell.Bounds = CenteredFraction(_grid.Bounds, _settings.SpotlightScale);
+        cell.Bounds = originalBounds;
         cell.BringToFront();
 
-        _zoomedCells[cell] = (position.Column, position.Row);
+        _zoomedCells[cell] = (position.Column, position.Row, originalBounds);
+
+        Rectangle target = CenteredFraction(_grid.Bounds, _settings.SpotlightScale);
+        AnimateBounds(cell, originalBounds, target, onComplete: null);
     }
 
     /// <summary>The rectangle of size <paramref name="fraction"/> of <paramref name="bounds"/>, centered within it.</summary>
@@ -770,27 +784,117 @@ public sealed class SequencePlayerForm : Form
         return new Rectangle(x, y, width, height);
     }
 
-    /// <summary>Puts a zoomed-in tile back into its grid cell at normal size.</summary>
+    /// <summary>Animates a zoomed-in tile back down to its grid-cell rectangle, then hands it back to the TableLayoutPanel.</summary>
     private void ZoomOut(VideoCellControl cell)
     {
-        if (!_zoomedCells.TryGetValue(cell, out (int Column, int Row) position))
+        if (!_zoomedCells.TryGetValue(cell, out (int Column, int Row, Rectangle OriginalBounds) zoom))
         {
             return;
         }
 
+        AnimateBounds(cell, cell.Bounds, zoom.OriginalBounds, onComplete: () => FinishZoomOut(cell, zoom.Column, zoom.Row));
+    }
+
+    /// <summary>Reparents a tile back into the TableLayoutPanel at normal size -- the non-animated tail end of ZoomOut.</summary>
+    private void FinishZoomOut(VideoCellControl cell, int column, int row)
+    {
         _zoomedCells.Remove(cell);
         _gridHost.Controls.Remove(cell);
         cell.Dock = DockStyle.Fill;
-        _grid.Controls.Add(cell, position.Column, position.Row);
+        _grid.Controls.Add(cell, column, row);
     }
 
-    /// <summary>Restores every currently-zoomed tile, e.g. before the grid is rebuilt or torn down.</summary>
+    /// <summary>
+    /// Restores every currently-zoomed tile instantly, e.g. before the grid is rebuilt or torn
+    /// down -- teardown can't wait on an in-flight animation, so this cancels one if there is one
+    /// instead of going through ZoomOut's animated path.
+    /// </summary>
     private void ResetZoom()
     {
-        foreach (VideoCellControl cell in _zoomedCells.Keys.ToList())
+        foreach (KeyValuePair<VideoCellControl, (int Column, int Row, Rectangle OriginalBounds)> entry in _zoomedCells.ToList())
         {
-            ZoomOut(cell);
+            CancelAnimation(entry.Key);
+            FinishZoomOut(entry.Key, entry.Value.Column, entry.Value.Row);
         }
+    }
+
+    /// <summary>Animates a tile's Bounds from <paramref name="from"/> to <paramref name="to"/> over ZoomAnimationDurationMs, eased.</summary>
+    private void AnimateBounds(VideoCellControl cell, Rectangle from, Rectangle to, Action? onComplete)
+    {
+        CancelAnimation(cell);
+
+        _zoomAnimations.Add(new BoundsAnimation
+        {
+            Cell = cell,
+            From = from,
+            To = to,
+            Start = DateTime.UtcNow,
+            OnComplete = onComplete
+        });
+
+        if (!_zoomAnimationTimer.Enabled)
+        {
+            _zoomAnimationTimer.Start();
+        }
+    }
+
+    /// <summary>Drops any in-flight animation for a tile without invoking its completion callback.</summary>
+    private void CancelAnimation(VideoCellControl cell)
+    {
+        _zoomAnimations.RemoveAll(a => a.Cell == cell);
+    }
+
+    private void OnZoomAnimationTick(object? sender, EventArgs e)
+    {
+        var finished = new List<BoundsAnimation>();
+
+        foreach (BoundsAnimation animation in _zoomAnimations)
+        {
+            double t = (DateTime.UtcNow - animation.Start).TotalMilliseconds / ZoomAnimationDurationMs;
+
+            if (t >= 1.0)
+            {
+                animation.Cell.Bounds = animation.To;
+                finished.Add(animation);
+                continue;
+            }
+
+            double eased = EaseInOutQuad(t);
+            animation.Cell.Bounds = Lerp(animation.From, animation.To, eased);
+        }
+
+        foreach (BoundsAnimation animation in finished)
+        {
+            _zoomAnimations.Remove(animation);
+            animation.OnComplete?.Invoke();
+        }
+
+        if (_zoomAnimations.Count == 0)
+        {
+            _zoomAnimationTimer.Stop();
+        }
+    }
+
+    private static Rectangle Lerp(Rectangle from, Rectangle to, double t)
+    {
+        int x = from.X + (int)Math.Round((to.X - from.X) * t);
+        int y = from.Y + (int)Math.Round((to.Y - from.Y) * t);
+        int width = from.Width + (int)Math.Round((to.Width - from.Width) * t);
+        int height = from.Height + (int)Math.Round((to.Height - from.Height) * t);
+        return new Rectangle(x, y, width, height);
+    }
+
+    /// <summary>Ease-in-out: slow to start, fast through the middle, slow to settle -- reads as a smoother zoom than a linear move.</summary>
+    private static double EaseInOutQuad(double t) => t < 0.5 ? 2 * t * t : 1 - Math.Pow(-2 * t + 2, 2) / 2;
+
+    /// <summary>One tile's in-flight Bounds animation, driven by OnZoomAnimationTick.</summary>
+    private sealed class BoundsAnimation
+    {
+        public VideoCellControl Cell = null!;
+        public Rectangle From;
+        public Rectangle To;
+        public DateTime Start;
+        public Action? OnComplete;
     }
 
     private void OnPlaybackProgress(object? sender, PlaybackProgressEventArgs e)
@@ -958,6 +1062,8 @@ public sealed class SequencePlayerForm : Form
             _player.Stop();
             _player.Dispose();
             StopPreview();
+            _zoomAnimationTimer.Stop();
+            _zoomAnimationTimer.Dispose();
         }
     }
 
