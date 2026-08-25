@@ -5,6 +5,9 @@
     <Compile Update="Controls\VideoCellControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Update="Controls\WinampVolumeSlider.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Update="Forms\ClipPlayerForm.cs">
       <SubType>Form</SubType>
     </Compile>

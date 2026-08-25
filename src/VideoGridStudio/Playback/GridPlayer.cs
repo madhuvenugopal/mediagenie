@@ -24,6 +24,7 @@ public sealed class GridPlayer : IDisposable
     private readonly List<TilePlayback> _active = new();
 
     private IReadOnlyList<VideoCellControl> _cells = Array.Empty<VideoCellControl>();
+    private int _volume = 100;
     private bool _disposed;
 
     public GridPlayer(LibVLC libVlc, Control uiContext)
@@ -54,6 +55,27 @@ public sealed class GridPlayer : IDisposable
     public bool IsRunning { get; private set; }
 
     public bool IsPaused { get; private set; }
+
+    /// <summary>Master volume (0-100) applied to every tile's audio, including tiles not yet started.</summary>
+    public int Volume => _volume;
+
+    /// <summary>Sets the master volume and applies it to every tile currently playing.</summary>
+    public void SetVolume(int volume)
+    {
+        _volume = Math.Clamp(volume, 0, 100);
+
+        foreach (TilePlayback playback in _active)
+        {
+            try
+            {
+                playback.Player.Volume = _volume;
+            }
+            catch
+            {
+                // The tile may be mid-teardown; the next Start/tick will pick up the volume.
+            }
+        }
+    }
 
     /// <summary>Starts every tile that holds a clip.</summary>
     public void Start(IReadOnlyList<VideoCellControl> cells, AudioMode audioMode, int audioTileIndex)
@@ -208,6 +230,15 @@ public sealed class GridPlayer : IDisposable
 
             player.Play(media);
 
+            try
+            {
+                player.Volume = _volume;
+            }
+            catch
+            {
+                // Same timing quirk as Mute above; OnTick re-applies it every tick until it sticks.
+            }
+
             return playback;
         }
         catch (Exception ex)
@@ -268,6 +299,18 @@ public sealed class GridPlayer : IDisposable
             if (time > 0)
             {
                 elapsed = Math.Max(elapsed, time / 1000.0);
+            }
+
+            if (player.Volume != _volume)
+            {
+                try
+                {
+                    player.Volume = _volume;
+                }
+                catch
+                {
+                    // Will retry on the next tick.
+                }
             }
 
             // Keep overwriting the snapshot as the end approaches; the last one written

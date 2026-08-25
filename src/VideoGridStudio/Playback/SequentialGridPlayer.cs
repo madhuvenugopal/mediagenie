@@ -28,6 +28,7 @@ public sealed class SequentialGridPlayer : IDisposable
     private int _queueIndex = -1;
     private TilePlayback? _current;
     private bool _muted;
+    private int _volume = 100;
     private bool _disposed;
 
     public SequentialGridPlayer(LibVLC libVlc, Control uiContext)
@@ -58,6 +59,29 @@ public sealed class SequentialGridPlayer : IDisposable
     public bool IsRunning { get; private set; }
 
     public bool IsPaused { get; private set; }
+
+    /// <summary>Master volume (0-100) applied to whichever tile is currently playing.</summary>
+    public int Volume => _volume;
+
+    /// <summary>Sets the master volume and applies it to the tile currently playing, if any.</summary>
+    public void SetVolume(int volume)
+    {
+        _volume = Math.Clamp(volume, 0, 100);
+
+        if (_current is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _current.Player.Volume = _volume;
+        }
+        catch
+        {
+            // The tile may be mid-teardown; the next tick will pick up the volume.
+        }
+    }
 
     /// <summary>Starts the first tile that holds a clip; each one queues the next as it ends.</summary>
     public void Start(IReadOnlyList<VideoCellControl> cells, bool muted)
@@ -225,6 +249,15 @@ public sealed class SequentialGridPlayer : IDisposable
 
             player.Play(media);
 
+            try
+            {
+                player.Volume = _volume;
+            }
+            catch
+            {
+                // Same timing quirk as Mute above; OnTick re-applies it every tick until it sticks.
+            }
+
             return playback;
         }
         catch (Exception ex)
@@ -277,6 +310,18 @@ public sealed class SequentialGridPlayer : IDisposable
         catch
         {
             return;
+        }
+
+        if (player.Volume != _volume)
+        {
+            try
+            {
+                player.Volume = _volume;
+            }
+            catch
+            {
+                // Will retry on the next tick.
+            }
         }
 
         // Keep overwriting the snapshot as the end approaches; the last one written before

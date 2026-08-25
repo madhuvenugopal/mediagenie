@@ -36,6 +36,8 @@ public sealed class ClipPlayerForm : Form
     private readonly ToolStripButton _pauseButton = new();
     private readonly ToolStripButton _stopButton = new();
     private readonly ToolStripButton _exportButton = new();
+    private readonly WinampVolumeSlider _volumeSlider = new();
+    private readonly ToolStripLabel _volumeValueLabel = new();
 
     private string? _ffmpegPath;
     private string? _ffprobePath;
@@ -80,7 +82,7 @@ public sealed class ClipPlayerForm : Form
         _toolStrip.GripStyle = ToolStripGripStyle.Hidden;
         _toolStrip.Padding = new Padding(8, 6, 8, 6);
         _toolStrip.ImageScalingSize = new Size(20, 20);
-        _toolStrip.RenderMode = ToolStripRenderMode.System;
+        _toolStrip.Renderer = new WinampToolStripRenderer();
 
         var addButton = new ToolStripButton("Add videos...")
         {
@@ -153,6 +155,29 @@ public sealed class ClipPlayerForm : Form
             ForeColor = Color.Black
         };
 
+        var volumeLabel = new ToolStripLabel("Vol")
+        {
+            BackColor = Color.WhiteSmoke,
+            ForeColor = Color.Black
+        };
+
+        _volumeSlider.Value = 100;
+        _volumeSlider.ValueChanged += (_, _) => OnVolumeChanged();
+
+        var volumeHost = new ToolStripControlHost(_volumeSlider)
+        {
+            AutoSize = false,
+            Size = new Size(90, 22),
+            ToolTipText = "Playback volume"
+        };
+
+        _volumeValueLabel.Text = "100%";
+        _volumeValueLabel.BackColor = Color.WhiteSmoke;
+        _volumeValueLabel.ForeColor = Color.Black;
+        _volumeValueLabel.AutoSize = false;
+        _volumeValueLabel.Width = 40;
+        _volumeValueLabel.TextAlign = ContentAlignment.MiddleCenter;
+
         _toolStrip.Items.AddRange(new ToolStripItem[]
         {
             addButton,
@@ -167,6 +192,10 @@ public sealed class ClipPlayerForm : Form
             _playButton,
             _pauseButton,
             _stopButton,
+            new ToolStripSeparator(),
+            volumeLabel,
+            volumeHost,
+            _volumeValueLabel,
             new ToolStripSeparator(),
             _exportButton,
             ffmpegButton
@@ -489,6 +518,12 @@ public sealed class ClipPlayerForm : Form
     {
         _player.TogglePause();
         _pauseButton.Text = _player.IsPaused ? "Resume" : "Pause";
+    }
+
+    private void OnVolumeChanged()
+    {
+        _player.SetVolume(_volumeSlider.Value);
+        _volumeValueLabel.Text = $"{_volumeSlider.Value}%";
     }
 
     private void StopPlayback()
