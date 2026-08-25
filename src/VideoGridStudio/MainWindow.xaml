@@ -7,6 +7,8 @@
         Icon="pack://application:,,,/Resources/AppIcon.ico"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="Grayscale"
         KeyDown="Window_KeyDown">
     <Window.Resources>
         <!-- Dark submenu popups: the default MenuItem template pulls its popup background
@@ -103,6 +105,70 @@
             <Setter Property="Padding" Value="12,3"/>
             <Setter Property="Template" Value="{StaticResource VideoCreatorMenuItemTemplate}"/>
         </Style>
+
+        <!-- Winamp-style button chrome: a beveled metal cap (light-to-dark gradient, embossed
+             top-left highlight) applied to every Button in the window, with the classic
+             brighten-on-hover / invert-and-nudge-on-press feedback instead of the flat OS
+             button look. Transport buttons additionally swap their text for the classic
+             rewind/play/pause/stop/fast-forward glyphs (see the transport bar below). -->
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="#DCEBDD"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bevel" CornerRadius="2" BorderThickness="1" BorderBrush="#0A0A0A">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#6A6A6A" Offset="0"/>
+                                    <GradientStop Color="#4A4A4A" Offset="0.45"/>
+                                    <GradientStop Color="#2C2C2C" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border BorderThickness="1,1,0,0" BorderBrush="#33FFFFFF" CornerRadius="2" Margin="1">
+                                <ContentPresenter x:Name="Presenter" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"/>
+                            </Border>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bevel" Property="BorderBrush" Value="#3FB552"/>
+                                <Setter TargetName="Bevel" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#7C7C7C" Offset="0"/>
+                                            <GradientStop Color="#585858" Offset="0.45"/>
+                                            <GradientStop Color="#363636" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bevel" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#222222" Offset="0"/>
+                                            <GradientStop Color="#3A3A3A" Offset="0.55"/>
+                                            <GradientStop Color="#525252" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Presenter" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform X="1" Y="1"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid>
         <!-- Subtle multimedia-themed background texture. Kept low-opacity, and every panel
@@ -156,12 +222,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Button x:Name="PrevButton" Grid.Column="0" Content="&#8676;" Click="PrevButton_Click" Padding="10,4" Margin="0,0,6,0" ToolTip="Previous"/>
-                        <Button x:Name="Back10Button" Grid.Column="1" Content="&#171;&#160;10s" Click="Back10Button_Click" Padding="10,4" Margin="0,0,6,0"/>
-                        <Button x:Name="PlayPauseButton" Grid.Column="2" Content="Play" Click="PlayPauseButton_Click" Padding="14,4" Margin="0,0,6,0"/>
-                        <Button x:Name="StopButton" Grid.Column="3" Content="Stop" Click="StopButton_Click" Padding="12,4" Margin="0,0,6,0"/>
-                        <Button x:Name="Fwd10Button" Grid.Column="4" Content="10s&#160;&#187;" Click="Fwd10Button_Click" Padding="10,4" Margin="0,0,6,0"/>
-                        <Button x:Name="NextButton" Grid.Column="5" Content="&#8677;" Click="NextButton_Click" Padding="10,4" Margin="0,0,14,0" ToolTip="Next"/>
+                        <Button x:Name="PrevButton" Grid.Column="0" Content="&#9664;&#9664;" FontSize="11" Click="PrevButton_Click" Padding="10,4" MinWidth="34" Margin="0,0,4,0" ToolTip="Previous"/>
+                        <Button x:Name="Back10Button" Grid.Column="1" Content="&#171;&#160;10s" Click="Back10Button_Click" Padding="10,4" Margin="0,0,4,0"/>
+                        <Button x:Name="PlayPauseButton" Grid.Column="2" Content="&#9654;" FontSize="13" Click="PlayPauseButton_Click" Padding="14,4" MinWidth="40" Margin="0,0,4,0" ToolTip="Play / Pause"/>
+                        <Button x:Name="StopButton" Grid.Column="3" Content="&#9632;" FontSize="12" Click="StopButton_Click" Padding="12,4" MinWidth="36" Margin="0,0,4,0" ToolTip="Stop"/>
+                        <Button x:Name="Fwd10Button" Grid.Column="4" Content="10s&#160;&#187;" Click="Fwd10Button_Click" Padding="10,4" Margin="0,0,4,0"/>
+                        <Button x:Name="NextButton" Grid.Column="5" Content="&#9654;&#9654;" FontSize="11" Click="NextButton_Click" Padding="10,4" MinWidth="34" Margin="0,0,14,0" ToolTip="Next"/>
                         <TextBlock x:Name="TimeLabel" Grid.Column="6" Text="00:00 / 00:00" Foreground="White" VerticalAlignment="Center" Margin="0,0,14,0"/>
                         <TextBlock x:Name="NowPlayingLabel" Grid.Column="7" Text="No file loaded" Foreground="#AAAAAA" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         <TextBlock x:Name="KaraokeLabel" Grid.Column="8" Text="Karaoke" Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0"
@@ -256,7 +322,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="OSCILLOSCOPE (click to switch view)" Foreground="#3F6B36" FontSize="11" FontWeight="Bold" Margin="12,10,12,0"/>
+                                <TextBlock Grid.Row="0" Text="OSCILLOSCOPE (click to cycle: fire / line / off)" Foreground="#3F6B36" FontSize="11" FontWeight="Bold" Margin="12,10,12,0"/>
                                 <controls:OscilloscopeControl x:Name="Oscilloscope" Grid.Row="1" Margin="12"
                                                                Cursor="Hand" ToolTip="Click to switch view"
                                                                MouseLeftButtonDown="OscilloscopeView_MouseLeftButtonDown"/>
@@ -264,6 +330,13 @@
                                                                    Visibility="Collapsed"
                                                                    Cursor="Hand" ToolTip="Click to switch view"
                                                                    MouseLeftButtonDown="OscilloscopeView_MouseLeftButtonDown"/>
+                                <Border x:Name="OscilloscopeOffPanel" Grid.Row="1" Margin="12" Background="Transparent"
+                                        Visibility="Collapsed"
+                                        Cursor="Hand" ToolTip="Click to switch view"
+                                        MouseLeftButtonDown="OscilloscopeView_MouseLeftButtonDown">
+                                    <TextBlock Text="Visualization off &#8212; click to enable" Foreground="#5A6B5C" FontSize="12"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
                             </Grid>
                         </Border>
                     </Grid>

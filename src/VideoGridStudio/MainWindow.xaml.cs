@@ -22,6 +22,11 @@ public partial class MainWindow : Window
     private static readonly string[] VideoExtensions = { ".mkv", ".mp4" };
     private static readonly string[] AudioExtensions = { ".mp3", ".wav", ".wma", ".flac", ".aac", ".ogg" };
 
+    private const string PlayGlyph = "▶";  // ▶
+    private const string PauseGlyph = "‖"; // ‖
+
+    private enum OscilloscopeMode { Fire, Line, Off }
+
     // ----- Video (LibVLC) -----
     private LibVLC? _libVLC;
     private MediaPlayer? _mediaPlayer;
@@ -41,6 +46,10 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _positionTimer;
     private bool _isSeeking;
     private bool _suppressVolumeEvent;
+
+    // Default is Fire -- matches the controls' own default Visibility in XAML (Oscilloscope
+    // visible, OscilloscopeLine/OscilloscopeOffPanel collapsed).
+    private OscilloscopeMode _oscilloscopeMode = OscilloscopeMode.Fire;
 
     private bool _isFullscreen;
     private WindowState _previousWindowState;
@@ -93,7 +102,7 @@ public partial class MainWindow : Window
 
         _mediaPlayer.EndReached += (_, _) => Dispatcher.BeginInvoke(() =>
         {
-            PlayPauseButton.Content = "Play";
+            PlayPauseButton.Content = PlayGlyph;
             SeekSlider.Value = 0;
         });
 
@@ -225,11 +234,11 @@ public partial class MainWindow : Window
     {
         if (ActiveTabIndex == 1)
         {
-            PlayPauseButton.Content = _audioEngine.IsPlaying ? "Pause" : "Play";
+            PlayPauseButton.Content = _audioEngine.IsPlaying ? PauseGlyph : PlayGlyph;
         }
         else if (ActiveTabIndex == 0)
         {
-            PlayPauseButton.Content = (_mediaPlayer?.IsPlaying ?? false) ? "Pause" : "Play";
+            PlayPauseButton.Content = (_mediaPlayer?.IsPlaying ?? false) ? PauseGlyph : PlayGlyph;
         }
     }
 
@@ -745,12 +754,24 @@ public partial class MainWindow : Window
 
     private void OscilloscopeView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        // Both controls are always fed live samples (see the SamplesAvailable subscription in
-        // the constructor), so this is just a Visibility swap -- whichever one becomes visible
-        // already has current data to draw, no catch-up needed.
-        var showingFire = Oscilloscope.Visibility == Visibility.Visible;
-        Oscilloscope.Visibility = showingFire ? Visibility.Collapsed : Visibility.Visible;
-        OscilloscopeLine.Visibility = showingFire ? Visibility.Visible : Visibility.Collapsed;
+        _oscilloscopeMode = _oscilloscopeMode switch
+        {
+            OscilloscopeMode.Fire => OscilloscopeMode.Line,
+            OscilloscopeMode.Line => OscilloscopeMode.Off,
+            _ => OscilloscopeMode.Fire,
+        };
+        ApplyOscilloscopeMode();
+    }
+
+    // Both visualization controls are always fed live samples regardless of mode (see the
+    // SamplesAvailable subscription in the constructor), so switching -- including back on from
+    // Off -- is just a Visibility swap; whichever one becomes visible already has current data
+    // to draw, no catch-up needed.
+    private void ApplyOscilloscopeMode()
+    {
+        Oscilloscope.Visibility = _oscilloscopeMode == OscilloscopeMode.Fire ? Visibility.Visible : Visibility.Collapsed;
+        OscilloscopeLine.Visibility = _oscilloscopeMode == OscilloscopeMode.Line ? Visibility.Visible : Visibility.Collapsed;
+        OscilloscopeOffPanel.Visibility = _oscilloscopeMode == OscilloscopeMode.Off ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void StopButton_Click(object sender, RoutedEventArgs e)
