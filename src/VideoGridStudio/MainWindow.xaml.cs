@@ -25,7 +25,7 @@ public partial class MainWindow : Window
     private const string PlayGlyph = "▶";  // ▶
     private const string PauseGlyph = "‖"; // ‖
 
-    private enum OscilloscopeMode { Fire, Line, Off }
+    private enum OscilloscopeMode { Fire, Spectrum, Off }
 
     // ----- Video (LibVLC) -----
     private LibVLC? _libVLC;
@@ -48,7 +48,7 @@ public partial class MainWindow : Window
     private bool _suppressVolumeEvent;
 
     // Default is Fire -- matches the controls' own default Visibility in XAML (Oscilloscope
-    // visible, OscilloscopeLine/OscilloscopeOffPanel collapsed).
+    // visible, OscilloscopeSpectrum/OscilloscopeOffPanel collapsed).
     private OscilloscopeMode _oscilloscopeMode = OscilloscopeMode.Fire;
 
     private bool _isFullscreen;
@@ -81,7 +81,7 @@ public partial class MainWindow : Window
         _audioEngine.SamplesAvailable += (buffer, offset, count) =>
         {
             Oscilloscope.PushSamples(buffer, offset, count);
-            OscilloscopeLine.PushSamples(buffer, offset, count);
+            OscilloscopeSpectrum.PushSamples(buffer, offset, count);
         };
         _audioEngine.TrackEnded += AudioEngine_TrackEnded;
 
@@ -750,17 +750,17 @@ public partial class MainWindow : Window
     private void ClearOscilloscopes()
     {
         Oscilloscope.Clear();
-        OscilloscopeLine.Clear();
+        OscilloscopeSpectrum.Clear();
     }
 
-    // ----- Oscilloscope view switching (fire <-> classic line trace) -----
+    // ----- Oscilloscope view switching (fire <-> LED spectrum analyzer) -----
 
     private void OscilloscopeView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _oscilloscopeMode = _oscilloscopeMode switch
         {
-            OscilloscopeMode.Fire => OscilloscopeMode.Line,
-            OscilloscopeMode.Line => OscilloscopeMode.Off,
+            OscilloscopeMode.Fire => OscilloscopeMode.Spectrum,
+            OscilloscopeMode.Spectrum => OscilloscopeMode.Off,
             _ => OscilloscopeMode.Fire,
         };
         ApplyOscilloscopeMode();
@@ -773,7 +773,7 @@ public partial class MainWindow : Window
     private void ApplyOscilloscopeMode()
     {
         Oscilloscope.Visibility = _oscilloscopeMode == OscilloscopeMode.Fire ? Visibility.Visible : Visibility.Collapsed;
-        OscilloscopeLine.Visibility = _oscilloscopeMode == OscilloscopeMode.Line ? Visibility.Visible : Visibility.Collapsed;
+        OscilloscopeSpectrum.Visibility = _oscilloscopeMode == OscilloscopeMode.Spectrum ? Visibility.Visible : Visibility.Collapsed;
         OscilloscopeOffPanel.Visibility = _oscilloscopeMode == OscilloscopeMode.Off ? Visibility.Visible : Visibility.Collapsed;
     }
 
