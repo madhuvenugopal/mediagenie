@@ -289,6 +289,7 @@ public partial class MainWindow : Window
             {
                 _mediaPlayer?.Stop();
                 _currentItem = null;
+                VideoPlaceholderOverlay.Visibility = Visibility.Visible;
                 NowPlayingLabel.Text = "No file loaded";
                 RefreshTransportDisplay();
             }
@@ -302,6 +303,7 @@ public partial class MainWindow : Window
         {
             _mediaPlayer?.Stop();
             _currentItem = null;
+            VideoPlaceholderOverlay.Visibility = Visibility.Visible;
             NowPlayingLabel.Text = "No file loaded";
             RefreshTransportDisplay();
         }
@@ -338,6 +340,7 @@ public partial class MainWindow : Window
         using var media = new Media(_libVLC, new Uri(item.FullPath));
         _mediaPlayer.Play(media);
 
+        VideoPlaceholderOverlay.Visibility = Visibility.Collapsed;
         NowPlayingLabel.Text = item.DisplayName;
         RefreshTransportDisplay();
     }
@@ -784,6 +787,7 @@ public partial class MainWindow : Window
         else
         {
             _mediaPlayer?.Stop();
+            VideoPlaceholderOverlay.Visibility = Visibility.Visible;
         }
 
         SeekSlider.Value = 0;

@@ -274,7 +274,32 @@
 
                         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#3F3F46"/>
 
-                        <vlc:VideoView x:Name="VideoViewControl" Grid.Column="2" Background="Black" MouseDoubleClick="VideoViewControl_MouseDoubleClick"/>
+                        <!-- VideoView hosts the video surface as a native child HWND (see LibVLCSharp.WPF's
+                             VideoHwndHost), which paints over any ordinary WPF sibling regardless of z-order:
+                             the classic "airspace" problem. VideoView works around this itself: content
+                             assigned as its Content (not a Grid sibling) is re-hosted onto a transparent,
+                             always-aligned topmost window it manages internally (see LibVLCSharp.WPF's
+                             ForegroundWindow), which is the only way anything actually renders on top of it. -->
+                        <vlc:VideoView x:Name="VideoViewControl" Grid.Column="2" Background="Black" MouseDoubleClick="VideoViewControl_MouseDoubleClick">
+                            <!-- Shown whenever nothing is loaded/playing; hidden the moment PlayVideo starts one,
+                                 re-shown on Stop or when the playing item is removed. IsHitTestVisible="False" so
+                                 double-click (fullscreen) and everything else still reaches the video below. -->
+                            <Border x:Name="VideoPlaceholderOverlay" Background="Transparent" IsHitTestVisible="False">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420">
+                                    <Grid Width="120" Height="120" Margin="0,0,0,22" HorizontalAlignment="Center" Opacity="0.16">
+                                        <Ellipse Stroke="White" StrokeThickness="4"/>
+                                        <Polygon Points="46,35 46,85 88,60" Fill="White"/>
+                                    </Grid>
+                                    <TextBlock Text="MKV / MP4 Player · Video Grid Studio" Foreground="White" Opacity="0.55" FontSize="22" FontWeight="Bold"
+                                               HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Foreground="White" Opacity="0.4" FontSize="13" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,16">
+                                        Video via LibVLC, audio and voice recording via NAudio, a shared 7-band equalizer with karaoke vocal fade, and a VideoCreator grid tool that combines clips into one video -- or a portrait phone status.
+                                    </TextBlock>
+                                    <TextBlock Text="Add Video Files, or drop files onto the list, to begin" Foreground="White" Opacity="0.32" FontSize="12"
+                                               HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </vlc:VideoView>
                     </Grid>
                 </TabItem>
 
