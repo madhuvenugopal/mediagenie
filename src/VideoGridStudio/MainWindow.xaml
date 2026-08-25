@@ -169,6 +169,99 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Winamp-style slider chrome: a slim sunken groove, a green fill up to the thumb, and
+             a beveled metal thumb, using the same brushed-metal language as the Button style
+             above. Applied as an implicit Style (no x:Key), so it covers every Slider in the
+             window (SeekSlider, VolumeSlider, KaraokeSlider) automatically, the same way the
+             Button style above covers every button without a per-control Style="". -->
+        <Style x:Key="WinampSliderThumbStyle" TargetType="Thumb">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="Grip" CornerRadius="1" BorderThickness="1" BorderBrush="#0A0A0A">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#8A8A8A" Offset="0"/>
+                                    <GradientStop Color="#5A5A5A" Offset="0.5"/>
+                                    <GradientStop Color="#333333" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border BorderThickness="1,1,0,0" BorderBrush="#33FFFFFF" CornerRadius="1" Margin="1"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="Grip" Property="BorderBrush" Value="#3FB552"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="WinampSliderFillRepeatButtonStyle" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Height="6" VerticalAlignment="Center" CornerRadius="1,0,0,1">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#3FB552" Offset="0"/>
+                                    <GradientStop Color="#1F7A2E" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="WinampSliderTrackRepeatButtonStyle" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent" Height="6" VerticalAlignment="Center"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Slider">
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Border Height="6" VerticalAlignment="Center" CornerRadius="2"
+                                    BorderThickness="1" BorderBrush="#0A0A0A" Background="#0A0A0A"/>
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource WinampSliderFillRepeatButtonStyle}"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource WinampSliderTrackRepeatButtonStyle}"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource WinampSliderThumbStyle}"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid>
         <!-- Subtle multimedia-themed background texture. Kept low-opacity, and every panel
@@ -178,22 +271,37 @@
 
         <DockPanel LastChildFill="True">
 
-            <Menu DockPanel.Dock="Top" Background="#252526" Foreground="White" Height="26">
-                <MenuItem Header="_File" Foreground="White">
-                    <MenuItem Header="Add _Video Files..." Click="AddFilesButton_Click"/>
-                    <MenuItem Header="Add _Audio Files..." Click="AddAudioFilesButton_Click"/>
-                    <MenuItem Header="Add Audio F_older..." Click="AddAudioFolderButton_Click"/>
-                    <Separator/>
-                    <MenuItem Header="E_xit" Click="ExitMenuItem_Click"/>
-                </MenuItem>
-                <MenuItem Header="_Tools" Foreground="White">
-                    <MenuItem Header="_Preferences..." Click="PreferencesMenuItem_Click"/>
-                </MenuItem>
-                <MenuItem Header="_Help" Foreground="White">
-                    <MenuItem Header="_About Multimedia Player" Click="AboutMenuItem_Click"/>
-                </MenuItem>
-                <MenuItem Header="_VideoCreator" Style="{StaticResource VideoCreatorMenuItemStyle}" Click="VideoCreatorMenuItem_Click"/>
-            </Menu>
+            <Grid DockPanel.Dock="Top" Background="#252526" Height="26">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Menu Grid.Column="0" Background="#252526" Foreground="White">
+                    <MenuItem Header="_File" Foreground="White">
+                        <MenuItem Header="Add _Video Files..." Click="AddFilesButton_Click"/>
+                        <MenuItem Header="Add _Audio Files..." Click="AddAudioFilesButton_Click"/>
+                        <MenuItem Header="Add Audio F_older..." Click="AddAudioFolderButton_Click"/>
+                        <Separator/>
+                        <MenuItem Header="E_xit" Click="ExitMenuItem_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="_Tools" Foreground="White">
+                        <MenuItem Header="_Preferences..." Click="PreferencesMenuItem_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="_Help" Foreground="White">
+                        <MenuItem Header="_About Multimedia Player" Click="AboutMenuItem_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="_VideoCreator" Style="{StaticResource VideoCreatorMenuItemStyle}" Click="VideoCreatorMenuItem_Click"/>
+                </Menu>
+
+                <!-- Common mute toggle: applies to whichever engine (LibVLC video or NAudio audio)
+                     is behind the currently-active tab, same as VolumeSlider/KaraokeSlider already
+                     do; see MuteButton_Click. -->
+                <Button x:Name="MuteButton" Grid.Column="1" Click="MuteButton_Click" Padding="8,2"
+                        Margin="4,3,8,3" VerticalAlignment="Center" ToolTip="Mute">
+                    <TextBlock x:Name="MuteButtonIcon" Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+            </Grid>
 
             <!-- Shared transport bar: drives the Video tab's LibVLC player or the Audio tab's
                  NAudio engine depending which tab is active. Hidden on the Voice Record tab,

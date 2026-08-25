@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -22,8 +22,8 @@ public partial class MainWindow : Window
     private static readonly string[] VideoExtensions = { ".mkv", ".mp4" };
     private static readonly string[] AudioExtensions = { ".mp3", ".wav", ".wma", ".flac", ".aac", ".ogg" };
 
-    private const string PlayGlyph = "▶";  // ▶
-    private const string PauseGlyph = "‖"; // ‖
+    private const string PlayGlyph = "â–¶";  // â–¶
+    private const string PauseGlyph = "â€–"; // â€–
 
     private enum OscilloscopeMode { Fire, Spectrum, Off }
 
@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _positionTimer;
     private bool _isSeeking;
     private bool _suppressVolumeEvent;
+    private double _volumeBeforeMute = 100;
 
     // Default is Fire -- matches the controls' own default Visibility in XAML (Oscilloscope
     // visible, OscilloscopeSpectrum/OscilloscopeOffPanel collapsed).
@@ -225,6 +226,7 @@ public partial class MainWindow : Window
         _suppressVolumeEvent = true;
         VolumeSlider.Value = ActiveTabIndex == 1 ? _audioEngine.Volume * 100 : _mediaPlayer?.Volume ?? 100;
         VolumeLabel.Text = $"Vol {(int)VolumeSlider.Value}%";
+        UpdateMuteButtonIcon(VolumeSlider.Value <= 0);
         _suppressVolumeEvent = false;
 
         RefreshTransportDisplay();
@@ -804,7 +806,7 @@ public partial class MainWindow : Window
         {
             _mediaPlayer.Time = Math.Max(0, _mediaPlayer.Time - 10000);
         }
-        ShowOsd("◀◀ 10s");
+        ShowOsd("â—€â—€ 10s");
     }
 
     private void Fwd10Button_Click(object sender, RoutedEventArgs e)
@@ -817,7 +819,7 @@ public partial class MainWindow : Window
         {
             _mediaPlayer.Time = Math.Min(_mediaPlayer.Length, _mediaPlayer.Time + 10000);
         }
-        ShowOsd("10s ▶▶");
+        ShowOsd("10s â–¶â–¶");
     }
 
     private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -843,6 +845,33 @@ public partial class MainWindow : Window
         // seek/skip feedback, volume has a persistent control right there to read it from, so
         // it doesn't need to float a fading message over the video like the others do.
         VolumeLabel.Text = $"Vol {(int)e.NewValue}%";
+        UpdateMuteButtonIcon(e.NewValue <= 0);
+    }
+
+    /// <summary>
+    /// Toggles between silence and the last non-zero volume, applying to whichever engine
+    /// (video or audio) is behind the currently-active tab -- same tab-scoped convention
+    /// VolumeSlider/KaraokeSlider already follow. Driven entirely through VolumeSlider.Value so
+    /// VolumeSlider_ValueChanged does the actual engine plumbing; this just decides the target
+    /// value and remembers what to restore on unmute.
+    /// </summary>
+    private void MuteButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (VolumeSlider.Value > 0)
+        {
+            _volumeBeforeMute = VolumeSlider.Value;
+            VolumeSlider.Value = 0;
+        }
+        else
+        {
+            VolumeSlider.Value = _volumeBeforeMute > 0 ? _volumeBeforeMute : 100;
+        }
+    }
+
+    private void UpdateMuteButtonIcon(bool muted)
+    {
+        MuteButtonIcon.Text = muted ? "\uE74F" : "\uE767";
+        MuteButton.ToolTip = muted ? "Unmute" : "Mute";
     }
 
     private void KaraokeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
