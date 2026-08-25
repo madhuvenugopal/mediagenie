@@ -4,6 +4,7 @@
         xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
         xmlns:controls="clr-namespace:MkvPlayer.Controls"
         Title="Multimedia Player" Height="720" Width="1200" MinWidth="640" MinHeight="420"
+        Icon="pack://application:,,,/Resources/AppIcon.ico"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E"
         KeyDown="Window_KeyDown">
@@ -189,7 +190,8 @@
                         <DockPanel x:Name="FileListPanel" Grid.Column="0" Background="#E61E1E1E">
                             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
                                 <Button x:Name="AddFilesButton" Content="Add Files" Click="AddFilesButton_Click" Padding="8,4" Margin="0,0,6,0"/>
-                                <Button x:Name="RemoveFileButton" Content="Remove" Click="RemoveFileButton_Click" Padding="8,4"/>
+                                <Button x:Name="RemoveFileButton" Content="Remove" Click="RemoveFileButton_Click" Padding="8,4" Margin="0,0,6,0"/>
+                                <Button x:Name="ClearAllFilesButton" Content="Clear All" Click="ClearAllFilesButton_Click" Padding="8,4"/>
                             </StackPanel>
                             <TextBlock DockPanel.Dock="Top" Text="Playlist" Foreground="#AAAAAA" Margin="10,0,0,4" FontSize="11"/>
                             <ListBox x:Name="FileListBox"
@@ -223,7 +225,8 @@
                             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
                                 <Button x:Name="AddAudioFilesButton" Content="Add Files" Click="AddAudioFilesButton_Click" Padding="8,4" Margin="0,0,6,0"/>
                                 <Button x:Name="AddAudioFolderButton" Content="Add Folder" Click="AddAudioFolderButton_Click" Padding="8,4" Margin="0,0,6,0"/>
-                                <Button x:Name="RemoveAudioFileButton" Content="Remove" Click="RemoveAudioFileButton_Click" Padding="8,4"/>
+                                <Button x:Name="RemoveAudioFileButton" Content="Remove" Click="RemoveAudioFileButton_Click" Padding="8,4" Margin="0,0,6,0"/>
+                                <Button x:Name="ClearAllAudioFilesButton" Content="Clear All" Click="ClearAllAudioFilesButton_Click" Padding="8,4"/>
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,0,8,4">
                                 <Button x:Name="PlaySelectedAudioButton" Content="Play Selected" Click="PlaySelectedAudioButton_Click" Padding="8,4" Margin="0,0,6,0"/>

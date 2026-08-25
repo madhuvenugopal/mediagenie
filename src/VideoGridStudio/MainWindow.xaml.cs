@@ -287,6 +287,18 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ClearAllFilesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentItem != null)
+        {
+            _mediaPlayer?.Stop();
+            _currentItem = null;
+            NowPlayingLabel.Text = "No file loaded";
+            RefreshTransportDisplay();
+        }
+        MediaFiles.Clear();
+    }
+
     private void FileListBox_Drop(object sender, DragEventArgs e)
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files)
@@ -395,6 +407,20 @@ public partial class MainWindow : Window
             }
             AudioFiles.Remove(item);
         }
+    }
+
+    private void ClearAllAudioFilesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_audioEngine.CurrentFilePath != null)
+        {
+            _audioEngine.Stop();
+            ClearOscilloscopes();
+            NowPlayingLabel.Text = "No file loaded";
+            RefreshTransportDisplay();
+        }
+        _audioQueue = new List<string>();
+        _audioQueueIndex = -1;
+        AudioFiles.Clear();
     }
 
     private void AudioFileListBox_Drop(object sender, DragEventArgs e)
