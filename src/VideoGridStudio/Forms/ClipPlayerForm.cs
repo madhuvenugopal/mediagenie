@@ -39,6 +39,11 @@ public sealed class ClipPlayerForm : Form
     private readonly WinampVolumeSlider _volumeSlider = new();
     private readonly ToolStripLabel _volumeValueLabel = new();
 
+    // A single click on an idle tile plays just that clip in place, independent of the grid-wide
+    // GridPlayer -- see OnCellPlayRequested/StopPreview. At most one tile previews at a time.
+    private VideoCellControl? _previewCell;
+    private MediaPlayer? _previewPlayer;
+
     private string? _ffmpegPath;
     private string? _ffprobePath;
 
@@ -248,6 +253,7 @@ public sealed class ClipPlayerForm : Form
     private void RebuildGrid(int rows, int columns)
     {
         _player.Stop();
+        StopPreview();
 
         List<string?> existing = _slots.Select(s => s.FilePath).ToList();
         List<double> durations = _slots.Select(s => s.DurationSeconds).ToList();
@@ -298,6 +304,7 @@ public sealed class ClipPlayerForm : Form
 
             var cell = new VideoCellControl(slot) { Dock = DockStyle.Fill };
             cell.ClipDropped += (sender, path) => AssignClipAsync((VideoCellControl)sender!, path);
+            cell.PlayRequested += (sender, _) => OnCellPlayRequested((VideoCellControl)sender!);
             cell.BrowseRequested += (sender, _) => BrowseForCellAsync((VideoCellControl)sender!);
             cell.ClearRequested += (sender, _) => ClearCell((VideoCellControl)sender!);
 
@@ -379,6 +386,11 @@ public sealed class ClipPlayerForm : Form
 
     private async void AssignClipAsync(VideoCellControl cell, string path)
     {
+        if (ReferenceEquals(cell, _previewCell))
+        {
+            StopPreview();
+        }
+
         cell.Slot.Assign(path);
         cell.ResetSurface();
         UpdateStatus();
@@ -403,6 +415,11 @@ public sealed class ClipPlayerForm : Form
         _appSettings.LastInputFolder = Path.GetDirectoryName(dialog.FileName);
         _appSettings.Save();
 
+        if (ReferenceEquals(cell, _previewCell))
+        {
+            StopPreview();
+        }
+
         cell.Slot.Assign(dialog.FileName);
         cell.ResetSurface();
         UpdateStatus();
@@ -412,6 +429,11 @@ public sealed class ClipPlayerForm : Form
 
     private void ClearCell(VideoCellControl cell)
     {
+        if (ReferenceEquals(cell, _previewCell))
+        {
+            StopPreview();
+        }
+
         cell.Slot.Clear();
         cell.ResetSurface();
         UpdateStatus();
@@ -420,6 +442,7 @@ public sealed class ClipPlayerForm : Form
     private void ClearAll()
     {
         _player.Stop();
+        StopPreview();
 
         foreach (VideoCellControl cell in _cells)
         {
@@ -506,6 +529,7 @@ public sealed class ClipPlayerForm : Form
             return;
         }
 
+        StopPreview();
         _player.Start(_cells, _settings.AudioMode, _settings.AudioTileIndex);
         _playButton.Enabled = false;
         _pauseButton.Enabled = true;
@@ -524,6 +548,80 @@ public sealed class ClipPlayerForm : Form
     {
         _player.SetVolume(_volumeSlider.Value);
         _volumeValueLabel.Text = $"{_volumeSlider.Value}%";
+    }
+
+    /// <summary>
+    /// Plays one tile's clip in place, independent of GridPlayer -- clicking a tile is a quick
+    /// single-clip preview, not the same thing as "Play all". Ignored while GridPlayer already
+    /// owns every tile's VideoSurface, since swapping a tile's player out from under it would
+    /// leave GridPlayer holding a dangling reference. Clicking the tile already previewing
+    /// stops it; clicking a different one switches to that tile instead.
+    /// </summary>
+    private void OnCellPlayRequested(VideoCellControl cell)
+    {
+        if (_player.IsRunning || !cell.Slot.HasClip)
+        {
+            return;
+        }
+
+        if (ReferenceEquals(cell, _previewCell))
+        {
+            StopPreview();
+            return;
+        }
+
+        StopPreview();
+
+        try
+        {
+            var player = new MediaPlayer(_libVlc) { EnableHardwareDecoding = true };
+            player.EndReached += (_, _) => BeginInvoke(new Action(StopPreview));
+            player.EncounteredError += (_, _) => BeginInvoke(new Action(StopPreview));
+
+            cell.ShowVideo(player);
+
+            using var media = new Media(_libVlc, cell.Slot.FilePath!, FromType.FromPath);
+            player.Play(media);
+
+            _previewCell = cell;
+            _previewPlayer = player;
+        }
+        catch
+        {
+            // The tile just stays on its placeholder if this particular file can't be previewed.
+        }
+    }
+
+    /// <summary>Stops the single-tile preview started by OnCellPlayRequested, if any.</summary>
+    private void StopPreview()
+    {
+        if (_previewPlayer is null)
+        {
+            return;
+        }
+
+        MediaPlayer player = _previewPlayer;
+        VideoCellControl? cell = _previewCell;
+        _previewPlayer = null;
+        _previewCell = null;
+
+        cell?.DetachPlayer();
+        cell?.ResetSurface();
+
+        // Tearing a player down can block for a moment, so keep it off the UI thread -- same
+        // reasoning as GridPlayer's own Release().
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            try
+            {
+                player.Stop();
+                player.Dispose();
+            }
+            catch
+            {
+                // Nothing useful to do if VLC is already gone.
+            }
+        });
     }
 
     private void StopPlayback()
@@ -586,6 +684,7 @@ public sealed class ClipPlayerForm : Form
         }
 
         _player.Stop();
+        StopPreview();
         ResetTransport();
 
         foreach (ClipSlot slot in _slots.Where(s => s.HasClip && s.DurationSeconds <= 0))
@@ -710,6 +809,7 @@ public sealed class ClipPlayerForm : Form
         {
             _player.Stop();
             _player.Dispose();
+            StopPreview();
         }
     }
 

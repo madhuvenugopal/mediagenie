@@ -68,6 +68,14 @@ public sealed class VideoCellControl : UserControl
         HookDragAndDrop(_surface);
         HookDragAndDrop(_videoView);
 
+        _surface.MouseClick += (_, e) =>
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                PlayRequested?.Invoke(this, EventArgs.Empty);
+            }
+        };
+
         _surface.MouseDoubleClick += (_, e) =>
         {
             if (e.Button == MouseButtons.Left)
@@ -79,6 +87,9 @@ public sealed class VideoCellControl : UserControl
 
     /// <summary>Raised when the user drops a video file on this tile.</summary>
     public event EventHandler<string>? ClipDropped;
+
+    /// <summary>Raised when the user left-clicks this tile, asking to play its clip in place.</summary>
+    public event EventHandler? PlayRequested;
 
     /// <summary>Raised when the user asks to pick a file for this tile.</summary>
     public event EventHandler? BrowseRequested;

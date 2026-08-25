@@ -96,6 +96,23 @@ public sealed class WinampToolStripRenderer : ToolStripProfessionalRenderer
         base.OnRenderItemText(e);
     }
 
+    protected override void OnRenderLabelBackground(ToolStripItemRenderEventArgs e)
+    {
+        // ToolStripProfessionalRenderer's stock label background painting leaves an explicit
+        // BackColor unfilled, so a light-background label (Grid/Audio/Vol, set to WhiteSmoke
+        // for contrast against this otherwise-dark toolbar) shows the dark toolstrip gradient
+        // bleeding through behind its text instead of its own background. Fill explicitly
+        // whenever BackColor isn't the ambient default.
+        if (e.Item.BackColor != Control.DefaultBackColor && e.Item.BackColor != Color.Transparent)
+        {
+            using var brush = new SolidBrush(e.Item.BackColor);
+            e.Graphics.FillRectangle(brush, new Rectangle(Point.Empty, e.Item.Size));
+            return;
+        }
+
+        base.OnRenderLabelBackground(e);
+    }
+
     protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
     {
         Graphics g = e.Graphics;
