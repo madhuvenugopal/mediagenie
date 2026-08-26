@@ -22,8 +22,8 @@ public partial class MainWindow : Window
     private static readonly string[] VideoExtensions = { ".mkv", ".mp4" };
     private static readonly string[] AudioExtensions = { ".mp3", ".wav", ".wma", ".flac", ".aac", ".ogg" };
 
-    private const string PlayGlyph = "â–¶";  // â–¶
-    private const string PauseGlyph = "â€–"; // â€–
+    private const string PlayGlyph = "▶";  // ▶
+    private const string PauseGlyph = "‖"; // ‖
 
     private enum OscilloscopeMode { Fire, Spectrum, Off }
 
