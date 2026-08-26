@@ -29,6 +29,7 @@ public sealed class FfmpegSetupDialog : Form
         _currentPath = currentPath;
 
         Text = currentPath is null ? "FFmpeg is needed to export" : "FFmpeg location";
+        Icon = AppIcon.Value;
 
         // Sizable rather than fixed: at 150% scaling a fixed height clips the explanation.
         FormBorderStyle = FormBorderStyle.Sizable;

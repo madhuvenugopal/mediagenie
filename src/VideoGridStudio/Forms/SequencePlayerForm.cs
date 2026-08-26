@@ -66,6 +66,7 @@ public sealed class SequencePlayerForm : Form
         Directory.CreateDirectory(_thumbnailDirectory);
 
         Text = "Video Grid Studio - Play in order";
+        Icon = AppIcon.Value;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(960, 640);
         ClientSize = new Size(1280, 800);
@@ -186,6 +187,7 @@ public sealed class SequencePlayerForm : Form
         {
             AutoSize = false,
             Size = new Size(90, 22),
+            Margin = new Padding(6, 1, 6, 2),
             ToolTipText = "Playback volume"
         };
 

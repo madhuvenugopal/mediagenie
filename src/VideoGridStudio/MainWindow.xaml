@@ -448,11 +448,18 @@
                                      DisplayMemberPath="DisplayName"
                                      SelectionMode="Extended"
                                      MouseDoubleClick="AudioFileListBox_MouseDoubleClick"
+                                     PreviewMouseRightButtonDown="AudioFileListBox_PreviewMouseRightButtonDown"
                                      AllowDrop="True"
                                      Drop="AudioFileListBox_Drop"
                                      Background="#252526"
                                      Foreground="White"
-                                     BorderThickness="0"/>
+                                     BorderThickness="0">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu Background="#252526" Foreground="White">
+                                        <MenuItem Header="Save As..." Click="SaveAudioFileAsMenuItem_Click"/>
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                            </ListBox>
                         </DockPanel>
 
                         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#3F3F46"/>

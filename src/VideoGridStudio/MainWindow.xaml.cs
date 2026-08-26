@@ -467,6 +467,41 @@ public partial class MainWindow : Window
         PlayAudioQueue(items.Select(i => i.FullPath).ToList(), 0);
     }
 
+    private void AudioFileListBox_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject source &&
+            ItemsControl.ContainerFromElement(AudioFileListBox, source) is ListBoxItem item)
+        {
+            if (!item.IsSelected)
+            {
+                AudioFileListBox.SelectedItem = item.DataContext;
+            }
+        }
+    }
+
+    private void SaveAudioFileAsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (AudioFileListBox.SelectedItem is not MediaItem item) return;
+
+        var ext = Path.GetExtension(item.FullPath);
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save audio file as",
+            FileName = item.DisplayName,
+            Filter = string.IsNullOrEmpty(ext) ? "All files|*.*" : $"Audio file (*{ext})|*{ext}",
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            File.Copy(item.FullPath, dialog.FileName, overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Couldn't save file", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     // ----- Audio: playlists -----
 
     private void CreatePlaylistButton_Click(object sender, RoutedEventArgs e)

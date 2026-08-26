@@ -55,6 +55,7 @@ public sealed class ClipPlayerForm : Form
         _ffprobePath = FfmpegLocator.FindFfprobe(_ffmpegPath);
 
         Text = "Video Grid Studio";
+        Icon = AppIcon.Value;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(960, 640);
         ClientSize = new Size(1280, 800);
@@ -173,6 +174,7 @@ public sealed class ClipPlayerForm : Form
         {
             AutoSize = false,
             Size = new Size(90, 22),
+            Margin = new Padding(6, 1, 6, 2),
             ToolTipText = "Playback volume"
         };
 

@@ -19,6 +19,7 @@ public sealed class LauncherForm : Form
         _libVlc = libVlc;
 
         Text = "Video Grid Studio";
+        Icon = AppIcon.Value;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterScreen;
         MaximizeBox = false;

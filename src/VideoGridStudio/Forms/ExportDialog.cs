@@ -55,6 +55,7 @@ public sealed class ExportDialog : Form
         _appSettings = appSettings;
 
         Text = sequential ? "Export playlist to a single video" : "Export grid to a single video";
+        Icon = AppIcon.Value;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
         MaximizeBox = false;
@@ -424,6 +425,12 @@ public sealed class ExportDialog : Form
         {
             MessageBox.Show(this, "Choose where to save the video first.", "No output file", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
+        }
+
+        if (string.IsNullOrEmpty(Path.GetExtension(output)))
+        {
+            output += ".mp4";
+            _outputBox.Text = output;
         }
 
         try
