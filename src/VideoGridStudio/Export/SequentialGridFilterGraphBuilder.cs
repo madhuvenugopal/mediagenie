@@ -11,17 +11,47 @@ namespace VideoGridStudio.Export;
 /// GridFilterGraphBuilder for that). The canvas is identical -- same background PNG, same
 /// tile positions -- but each clip's overlay is time-shifted so it only appears once the
 /// previous clip has finished, and is held on its last frame afterwards until the whole run
-/// ends, mirroring what SequentialGridPlayer shows on screen tile by tile.
+/// ends, mirroring what SequentialGridPlayer shows on screen tile by tile. While a clip plays
+/// it also grows/shrinks between its own tile and the centered spotlight rect via
+/// <see cref="AppendZoomTransition"/>, baking in a transition that mirrors (though linearly
+/// rather than eased -- see that method) the live zoom SequencePlayerForm plays back for the
+/// same tile.
 /// </summary>
 public static class SequentialGridFilterGraphBuilder
 {
     private const int AudioSampleRate = 48000;
+
+    /// <summary>Filter graph text length above which FFmpeg's own command line (see FfmpegRunner,
+    /// which passes it inline -- this build of FFmpeg has no "read the graph from a file" option
+    /// to fall back on) risks exceeding Windows' ~32K command-line limit once the rest of the
+    /// arguments (every clip's path, the background PNG, codec options) are added on top.</summary>
+    private const int SafeFilterGraphLength = 24000;
 
     public static GridCompositionPlan Build(
         GridSettings settings,
         IReadOnlyList<ClipSlot> slots,
         string backgroundImagePath,
         string outputPath)
+    {
+        GridCompositionPlan plan = BuildInternal(settings, slots, backgroundImagePath, outputPath, includeZoom: true);
+
+        // A big enough grid's animated zoom transitions can push the graph past the safe length
+        // on their own -- falling back to the plain instant-cut zoom keeps every grid size
+        // exportable instead of failing outright once there are enough clips.
+        if (plan.FilterScript.Length > SafeFilterGraphLength)
+        {
+            plan = BuildInternal(settings, slots, backgroundImagePath, outputPath, includeZoom: false);
+        }
+
+        return plan;
+    }
+
+    private static GridCompositionPlan BuildInternal(
+        GridSettings settings,
+        IReadOnlyList<ClipSlot> slots,
+        string backgroundImagePath,
+        string outputPath,
+        bool includeZoom)
     {
         List<ClipSlot> clips = slots
             .Where(s => s.HasClip && s.DurationSeconds > 0)
@@ -65,14 +95,45 @@ public static class SequentialGridFilterGraphBuilder
             int input = i + 1;
             int row = clip.Index / settings.Columns;
             int column = clip.Index % settings.Columns;
+            int cellX = settings.CellX(column);
+            int cellY = settings.CellY(row);
             double start = cursor;
             double end = start + clip.DurationSeconds;
             double holdAfterEnd = Math.Max(0, total - end);
 
-            // While this clip is actually playing, it's shown centered over the grid at
-            // settings.SpotlightScale of the canvas (the other tiles stay visible behind it)
-            // instead of just its own tile -- mirrors the same centered spotlight
-            // SequencePlayerForm applies live for the same tile while it plays.
+            // Grow/shrink transition length can't exceed half the clip, so a very short clip
+            // still gets a symmetric (if abbreviated) ramp instead of the two overlapping.
+            double rampSeconds = Math.Min(GridSettings.ZoomAnimationMs / 1000.0, clip.DurationSeconds / 2.0);
+            double holdStart = start + rampSeconds;
+            double holdEnd = Math.Max(holdStart, end - rampSeconds);
+
+            string current = $"base{i}";
+
+            // When the grid has too many clips for the animated version to stay within FFmpeg's
+            // command-line budget (see Build/SafeFilterGraphLength), zoomWindowStart/End collapse
+            // to the clip's whole active span and no ramp layers are added below -- same instant
+            // cut to/from spotlight size as before this feature existed.
+            double zoomWindowStart = start;
+            double zoomWindowEnd = end;
+
+            if (includeZoom)
+            {
+                // Grow from the tile's own cell rect up to the centered spotlight rect -- mirrors
+                // SequencePlayerForm's eased ZoomIn animation, baked into the render as a
+                // continuous per-frame expression (see AppendZoomTransition) rather than the live
+                // version's timer-driven ticks, so it stays one filter-graph layer regardless of
+                // frame rate.
+                current = AppendZoomTransition(
+                    videoParts, current, input, i, "in", start, rampSeconds, fps,
+                    cellWidth, cellHeight, cellX, cellY,
+                    spotlightWidth, spotlightHeight, spotlightX, spotlightY);
+
+                zoomWindowStart = holdStart;
+                zoomWindowEnd = holdEnd;
+            }
+
+            // Hold at full spotlight size while the clip plays out its steady middle (or, with no
+            // zoom transition, its entire turn).
             videoParts.Add(string.Concat(
                 $"[{input}:v]",
                 $"scale={spotlightWidth}:{spotlightHeight}:force_original_aspect_ratio=decrease,",
@@ -82,17 +143,27 @@ public static class SequentialGridFilterGraphBuilder
                 $"[vz{input}];"));
 
             videoParts.Add(string.Concat(
-                $"[base{i}][vz{input}]",
+                $"[{current}][vz{input}]",
                 $"overlay=x={spotlightX}:y={spotlightY}",
-                $":enable='between(t,{Num(start)},{Num(end)})'",
+                $":enable='between(t,{Num(zoomWindowStart)},{Num(zoomWindowEnd)})'",
                 ":eof_action=repeat:shortest=0",
-                $"[basez{i}];"));
+                $"[hz{i}];"));
+            current = $"hz{i}";
+
+            if (includeZoom)
+            {
+                // Shrink back from the spotlight rect down to the tile's own cell rect, ending
+                // exactly at `end` so the frozen-frame overlay below can take over without a gap.
+                current = AppendZoomTransition(
+                    videoParts, current, input, i, "out", holdEnd, rampSeconds, fps,
+                    spotlightWidth, spotlightHeight, spotlightX, spotlightY,
+                    cellWidth, cellHeight, cellX, cellY);
+            }
 
             // Fit into the tile, keep the aspect ratio, letterbox the remainder, hold the
             // final frame once this clip ends, then shift the whole stream so it begins
-            // exactly when the previous clip's held tail ends. Only shown once the zoomed-in
-            // playback window above ends, so the tile shrinks back to normal size right as it
-            // settles on its frozen last frame.
+            // exactly when the previous clip's held tail ends. Only shown once the shrink-back
+            // ramp above ends, so the tile settles into place right as it freezes.
             videoParts.Add(string.Concat(
                 $"[{input}:v]",
                 $"scale={cellWidth}:{cellHeight}:force_original_aspect_ratio=decrease,",
@@ -102,11 +173,11 @@ public static class SequentialGridFilterGraphBuilder
                 $"setpts=PTS+{Num(start)}/TB",
                 $"[v{input}];"));
 
-            // enable=... keeps the zoomed-in layer showing through until this tile has
-            // finished playing; eof_action=repeat covers a decoder that runs a hair short.
+            // enable=... keeps the zoom layers showing through until this tile has finished
+            // playing; eof_action=repeat covers a decoder that runs a hair short.
             videoParts.Add(string.Concat(
-                $"[basez{i}][v{input}]",
-                $"overlay=x={settings.CellX(column)}:y={settings.CellY(row)}",
+                $"[{current}][v{input}]",
+                $"overlay=x={cellX}:y={cellY}",
                 $":enable='gte(t,{Num(end)})'",
                 ":eof_action=repeat:shortest=0",
                 $"[base{i + 1}];"));
@@ -229,6 +300,80 @@ public static class SequentialGridFilterGraphBuilder
             total,
             clips.Select(c => c.Index).ToList());
     }
+
+    /// <summary>
+    /// Appends one overlay layer onto <paramref name="current"/> that grows/shrinks continuously
+    /// between the "from" and "to" rect (cell to spotlight when growing, spotlight to cell when
+    /// shrinking) over <paramref name="rampSeconds"/>, as a single per-frame FFmpeg expression
+    /// (scale's and overlay's <c>eval=frame</c>) rather than SequencePlayerForm's timer ticks, so
+    /// the filter graph stays one layer regardless of frame rate or ramp length. Unlike the
+    /// padded hold/tail layers, this one has no letterbox pad -- <c>pad</c>'s own width/height
+    /// expressions can't see <c>t</c>, so a time-varying pad box isn't possible here -- but the
+    /// transition is brief enough (a fraction of a second) that the source's own edges showing
+    /// through in place of letterbox bars isn't noticeable. Returns the label of the resulting
+    /// composite.
+    /// </summary>
+    private static string AppendZoomTransition(
+        List<string> videoParts, string current, int input, int clipIndex, string direction,
+        double windowStart, double rampSeconds, int fps,
+        int fromWidth, int fromHeight, int fromX, int fromY,
+        int toWidth, int toHeight, int toX, int toY)
+    {
+        if (rampSeconds <= 0)
+        {
+            return current;
+        }
+
+        double windowEnd = windowStart + rampSeconds;
+
+        // enable='between(...)' on the overlay below confines *compositing* to [windowStart,
+        // windowEnd], but scale has no such gate of its own -- it keeps evaluating this
+        // expression for the clip's entire duration, so outside this layer's own window raw
+        // swings far past [0,1] (very negative before windowStart, far above 1 after windowEnd).
+        // Asking scale for the resulting wildly out-of-range target sizes destabilizes it enough
+        // to corrupt frames even inside the intended window, so raw is clamped here despite the
+        // overlay's enable already restricting where the result is actually seen.
+        //
+        // Progress is linear rather than eased like SequencePlayerForm's live version: an eased
+        // curve needs its raw sub-expression written out three times (the branch test plus both
+        // branches), and with four of these expressions needed per direction
+        // (width/height/centerX/centerY), that multiplies into a filter graph too large for
+        // FFmpeg's command line on a full grid -- this build has no file-based alternative to
+        // fall back on (see FfmpegRunner). A linear grow/shrink is still a continuous animation,
+        // just without the slow-fast-slow feel.
+        string raw = $"min(1,max(0,(t-{Num(windowStart)})/{Num(rampSeconds)}))";
+
+        string widthExpr = LerpExpr(fromWidth, toWidth, raw);
+        string heightExpr = LerpExpr(fromHeight, toHeight, raw);
+        // Centered on the interpolated target rect's own center rather than its corner, so the
+        // actual (possibly letterbox-less, aspect-preserved) scaled frame size doesn't matter --
+        // overlay_w/overlay_h always land it in the middle of where the rect currently is.
+        string centerXExpr = LerpExpr(fromX + (fromWidth / 2.0), toX + (toWidth / 2.0), raw);
+        string centerYExpr = LerpExpr(fromY + (fromHeight / 2.0), toY + (toHeight / 2.0), raw);
+
+        string videoLabel = $"vz{direction}{input}";
+        string nextLabel = $"z{direction}{clipIndex}";
+
+        videoParts.Add(string.Concat(
+            $"[{input}:v]",
+            $"scale=w='trunc(({widthExpr})/2)*2':h='trunc(({heightExpr})/2)*2':eval=frame:force_original_aspect_ratio=decrease,",
+            $"setsar=1,fps={fps},format=rgba,",
+            $"setpts=PTS+{Num(windowStart)}/TB",
+            $"[{videoLabel}];"));
+
+        videoParts.Add(string.Concat(
+            $"[{current}][{videoLabel}]",
+            $"overlay=x='({centerXExpr})-overlay_w/2':y='({centerYExpr})-overlay_h/2':eval=frame",
+            $":enable='between(t,{Num(windowStart)},{Num(windowEnd)})'",
+            ":eof_action=repeat:shortest=0",
+            $"[{nextLabel}];"));
+
+        return nextLabel;
+    }
+
+    /// <summary>FFmpeg-expression linear interpolation between two constants, driven by a 0..1 progress sub-expression.</summary>
+    private static string LerpExpr(double from, double to, string progressExpr) =>
+        $"({Num(from)}+({Num(to)}-{Num(from)})*{progressExpr})";
 
     private static bool WantsAudioFrom(GridSettings settings, int cellIndex) => settings.AudioMode switch
     {

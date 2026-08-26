@@ -33,7 +33,6 @@ public sealed class SequencePlayerForm : Form
     private readonly Dictionary<VideoCellControl, (int Column, int Row, Rectangle OriginalBounds)> _zoomedCells = new();
     private readonly List<BoundsAnimation> _zoomAnimations = new();
     private readonly System.Windows.Forms.Timer _zoomAnimationTimer = new() { Interval = 16 };
-    private const int ZoomAnimationDurationMs = 280;
     private readonly ToolStrip _toolStrip = new();
     private readonly StatusStrip _statusStrip = new();
     private readonly ToolStripStatusLabel _statusLabel = new();
@@ -820,7 +819,7 @@ public sealed class SequencePlayerForm : Form
         }
     }
 
-    /// <summary>Animates a tile's Bounds from <paramref name="from"/> to <paramref name="to"/> over ZoomAnimationDurationMs, eased.</summary>
+    /// <summary>Animates a tile's Bounds from <paramref name="from"/> to <paramref name="to"/> over GridSettings.ZoomAnimationMs, eased.</summary>
     private void AnimateBounds(VideoCellControl cell, Rectangle from, Rectangle to, Action? onComplete)
     {
         CancelAnimation(cell);
@@ -852,7 +851,7 @@ public sealed class SequencePlayerForm : Form
 
         foreach (BoundsAnimation animation in _zoomAnimations)
         {
-            double t = (DateTime.UtcNow - animation.Start).TotalMilliseconds / ZoomAnimationDurationMs;
+            double t = (DateTime.UtcNow - animation.Start).TotalMilliseconds / GridSettings.ZoomAnimationMs;
 
             if (t >= 1.0)
             {

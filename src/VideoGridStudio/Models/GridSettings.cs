@@ -33,6 +33,13 @@ public sealed class GridSettings
     /// </summary>
     public float SpotlightScale { get; set; } = 0.75f;
 
+    /// <summary>
+    /// Duration of the grow/shrink transition when a tile becomes (or stops being) the
+    /// spotlighted one, in milliseconds. Shared by SequencePlayerForm's live zoom timer and
+    /// SequentialGridFilterGraphBuilder's baked-in export zoom so the two match.
+    /// </summary>
+    public const int ZoomAnimationMs = 280;
+
     /// <summary>Grid position whose audio is used when <see cref="AudioMode.SingleTile"/> is chosen.</summary>
     public int AudioTileIndex { get; set; }
 
