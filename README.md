@@ -1,11 +1,11 @@
-# Video Grid Studio
+# MediaGenie
 
 A Windows desktop app (C# / .NET 8, Visual Studio 2022) that combines two tools in one process:
 
 - **MkvPlayer** (WPF) — a video/audio player with three tabs (Video via LibVLC, Audio and Voice
   Record via NAudio), a shared transport bar, and a 7-band equalizer. **This is what opens on
   launch.**
-- **Video Grid Studio** (WinForms) — reachable from the player's **VideoCreator** menu — combines
+- **Grid tools** (WinForms) — reachable from the player's **VideoCreator** menu — combines
   several video clips into one, in one of two modes:
   - **Play Together** — a Google-Meet-style grid. **Every clip starts at the same moment**; a clip
     that runs out before the others keeps showing its last frame until the longest one ends. The
@@ -26,7 +26,7 @@ top-level window, non-modally — the player stays usable alongside it.
 
 ## Opening it
 
-1. Open `VideoGridStudio.sln` in Visual Studio 2022 (17.8 or newer, .NET 8 SDK installed).
+1. Open `MediaGenie.sln` in Visual Studio 2022 (17.8 or newer, .NET 8 SDK installed).
 2. Restore happens on first build — the LibVLC binaries come down with the NuGet packages.
 3. Set the configuration to **x64** and press F5.
 
@@ -45,7 +45,7 @@ have to install it yourself.** The first time you export without it, the app off
 official Windows build (BtbN's GPL static build, about 80 MB). It lands in
 
 ```
-%LocalAppData%\VideoGridStudio\ffmpeg
+%LocalAppData%\MediaGenie\ffmpeg
 ```
 
 which needs no administrator rights and touches nothing else on the machine. The **FFmpeg…** toolbar
@@ -55,7 +55,7 @@ If you would rather install it system-wide: `winget install Gyan.FFmpeg`, `choco
 `scoop install ffmpeg`. The app searches its own download folder, the folder next to the executable,
 the process **and** machine/user `PATH` (so an FFmpeg installed while the app was open is still
 found), winget's package and shim folders, Chocolatey, Scoop, and `C:\ffmpeg\bin`. Whatever it ends
-up using is remembered in `%AppData%\VideoGridStudio\settings.json`.
+up using is remembered in `%AppData%\MediaGenie\settings.json`.
 
 The downloaded build is GPL-licensed; if you redistribute this app with FFmpeg bundled, that licence
 applies to the bundle.
@@ -132,7 +132,7 @@ the same output options (resolution/fps/quality/tile gap/audio choice) as the gr
 ## Project layout
 
 ```
-src/VideoGridStudio/
+src/MediaGenie/
   App.xaml(.cs)                    WPF app entry point (StartupUri -> MainWindow); bootstraps
                                     WinForms visual styles/high-DPI once at startup
   MainWindow.xaml(.cs)             MkvPlayer: menu (incl. VideoCreator), tabs, transport bar
@@ -192,4 +192,3 @@ src/VideoGridStudio/
   Sequentially, it's every clip's length added together.
 - The forms are built in code rather than with `.Designer.cs` files, so the Visual Studio designer
   surface will not open them — the layout lives in `BuildToolStrip` / `BuildGridHost` / `BuildLayout`.
-"# mediagenie" 

@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>
 /// Runs an FFmpeg job and turns its -progress output into a percentage. Shared by both the

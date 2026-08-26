@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-namespace VideoGridStudio.Rendering;
+namespace MediaGenie.Rendering;
 
 /// <summary>
 /// Toolbar look shared by ClipPlayerForm and SequencePlayerForm: a brushed-metal dark strip

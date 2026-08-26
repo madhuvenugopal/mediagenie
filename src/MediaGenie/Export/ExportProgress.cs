@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 public sealed class ExportProgress
 {

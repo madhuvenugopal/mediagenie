@@ -1,9 +1,9 @@
 using System.Drawing;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
-using VideoGridStudio.Rendering;
+using MediaGenie.Rendering;
 
-namespace VideoGridStudio.Forms;
+namespace MediaGenie.Forms;
 
 /// <summary>
 /// First window shown: picks which playback mode to open. Hides itself once a mode is
@@ -18,7 +18,7 @@ public sealed class LauncherForm : Form
     {
         _libVlc = libVlc;
 
-        Text = "Video Grid Studio";
+        Text = "MediaGenie";
         Icon = AppIcon.Value;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterScreen;
@@ -41,7 +41,7 @@ public sealed class LauncherForm : Form
 
         var title = new Label
         {
-            Text = "Video Grid Studio",
+            Text = "MediaGenie",
             Font = new Font("Segoe UI", 16f, FontStyle.Bold),
             ForeColor = Theme.PrimaryText,
             AutoSize = false,

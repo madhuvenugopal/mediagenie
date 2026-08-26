@@ -1,10 +1,10 @@
 using System.Drawing;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
-using VideoGridStudio.Controls;
-using VideoGridStudio.Models;
+using MediaGenie.Controls;
+using MediaGenie.Models;
 
-namespace VideoGridStudio.Playback;
+namespace MediaGenie.Playback;
 
 /// <summary>
 /// Plays every tile at the same time, the way a video call shows all the participants
@@ -32,7 +32,7 @@ public sealed class GridPlayer : IDisposable
         _libVlc = libVlc;
         _uiContext = uiContext;
 
-        _snapshotDirectory = Path.Combine(Path.GetTempPath(), "VideoGridStudio", "frames");
+        _snapshotDirectory = Path.Combine(Path.GetTempPath(), "MediaGenie", "frames");
         Directory.CreateDirectory(_snapshotDirectory);
 
         _ticker = new System.Windows.Forms.Timer { Interval = 200 };

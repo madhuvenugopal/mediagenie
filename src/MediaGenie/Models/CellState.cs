@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Models;
+namespace MediaGenie.Models;
 
 /// <summary>Lifecycle of a single tile in the grid.</summary>
 public enum CellState

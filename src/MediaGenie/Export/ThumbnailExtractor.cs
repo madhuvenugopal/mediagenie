@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>Grabs a single frame near the start of a clip via FFmpeg, for use as a "waiting its turn" preview.</summary>
 public static class ThumbnailExtractor

@@ -2,9 +2,9 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
-using VideoGridStudio.Models;
+using MediaGenie.Models;
 
-namespace VideoGridStudio.Rendering;
+namespace MediaGenie.Rendering;
 
 /// <summary>
 /// Draws the "nobody is on camera yet" tiles. The very same drawing code produces the

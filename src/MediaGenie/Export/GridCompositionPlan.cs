@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>Everything needed to run one export: the FFmpeg arguments and the filter graph.</summary>
 public sealed class GridCompositionPlan

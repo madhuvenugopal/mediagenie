@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace VideoGridStudio.Forms;
+namespace MediaGenie.Forms;
 
 /// <summary>The exe's own icon (embedded via ApplicationIcon in the .csproj), shared by every
 /// WinForms window so they match the WPF MainWindow's taskbar/title-bar icon instead of the

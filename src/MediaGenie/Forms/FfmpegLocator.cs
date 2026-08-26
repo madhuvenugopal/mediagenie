@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>Finds ffmpeg.exe / ffprobe.exe without making the user configure anything.</summary>
 public static class FfmpegLocator
@@ -6,7 +6,7 @@ public static class FfmpegLocator
     /// <summary>Where the built-in downloader puts its copy.</summary>
     public static string PrivateFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "VideoGridStudio",
+        "MediaGenie",
         "ffmpeg");
 
     /// <summary>

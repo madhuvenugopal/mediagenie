@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VideoGridStudio", "src\VideoGridStudio\VideoGridStudio.csproj", "{B1C2D3E4-5F60-4A71-8B92-0C1D2E3F4A5B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaGenie", "src\MediaGenie\MediaGenie.csproj", "{B1C2D3E4-5F60-4A71-8B92-0C1D2E3F4A5B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

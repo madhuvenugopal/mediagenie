@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
-using VideoGridStudio.Export;
+using MediaGenie.Export;
 
-namespace VideoGridStudio.Forms;
+namespace MediaGenie.Forms;
 
 /// <summary>
 /// Shown when exporting is attempted without FFmpeg present. Offers to fetch a build

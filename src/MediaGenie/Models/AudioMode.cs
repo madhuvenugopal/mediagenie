@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Models;
+namespace MediaGenie.Models;
 
 /// <summary>What to do with sound when every tile is playing at once.</summary>
 public enum AudioMode

@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>Result of inspecting a media file with ffprobe.</summary>
 public sealed record MediaInfo(double DurationSeconds, bool HasAudio, bool HasVideo);

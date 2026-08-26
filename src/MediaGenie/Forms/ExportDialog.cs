@@ -2,11 +2,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
-using VideoGridStudio.Export;
-using VideoGridStudio.Models;
-using VideoGridStudio.Rendering;
+using MediaGenie.Export;
+using MediaGenie.Models;
+using MediaGenie.Rendering;
 
-namespace VideoGridStudio.Forms;
+namespace MediaGenie.Forms;
 
 /// <summary>Picks the output settings, then runs the FFmpeg job and shows its progress.</summary>
 public sealed class ExportDialog : Form
@@ -470,7 +470,7 @@ public sealed class ExportDialog : Form
             }
         }
 
-        string workFolder = Path.Combine(Path.GetTempPath(), "VideoGridStudio", "export");
+        string workFolder = Path.Combine(Path.GetTempPath(), "MediaGenie", "export");
         Directory.CreateDirectory(workFolder);
         string backgroundPath = Path.Combine(workFolder, "grid-background.png");
         string filterPath = Path.Combine(workFolder, "filter.txt");

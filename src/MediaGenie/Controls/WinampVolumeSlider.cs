@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-namespace VideoGridStudio.Controls;
+namespace MediaGenie.Controls;
 
 /// <summary>
 /// A small owner-drawn horizontal volume slider styled after Winamp's transport-bar volume

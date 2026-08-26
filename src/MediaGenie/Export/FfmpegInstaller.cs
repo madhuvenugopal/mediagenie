@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Net.Http;
 
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 public sealed class FfmpegInstallProgress
 {
@@ -44,7 +44,7 @@ public static class FfmpegInstaller
     {
         Directory.CreateDirectory(InstallFolder);
 
-        string workFolder = Path.Combine(Path.GetTempPath(), "VideoGridStudio");
+        string workFolder = Path.Combine(Path.GetTempPath(), "MediaGenie");
         Directory.CreateDirectory(workFolder);
         string zipPath = Path.Combine(workFolder, "ffmpeg-download.zip");
 
@@ -71,7 +71,7 @@ public static class FfmpegInstaller
     {
         using var handler = new HttpClientHandler { AllowAutoRedirect = true };
         using var http = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("VideoGridStudio/1.0");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("MediaGenie/1.0");
 
         using HttpResponseMessage response = await http
             .GetAsync(DownloadUrl, HttpCompletionOption.ResponseHeadersRead, token)

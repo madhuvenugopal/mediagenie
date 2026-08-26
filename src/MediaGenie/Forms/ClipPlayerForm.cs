@@ -2,13 +2,13 @@ using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
-using VideoGridStudio.Controls;
-using VideoGridStudio.Export;
-using VideoGridStudio.Models;
-using VideoGridStudio.Playback;
-using VideoGridStudio.Rendering;
+using MediaGenie.Controls;
+using MediaGenie.Export;
+using MediaGenie.Models;
+using MediaGenie.Playback;
+using MediaGenie.Rendering;
 
-namespace VideoGridStudio.Forms;
+namespace MediaGenie.Forms;
 
 /// <summary>The main window: a Meet-style grid of tiles, a transport bar, and an export button.</summary>
 public sealed class ClipPlayerForm : Form
@@ -54,7 +54,7 @@ public sealed class ClipPlayerForm : Form
         _ffmpegPath = FfmpegLocator.FindFfmpeg(_appSettings.FfmpegPath);
         _ffprobePath = FfmpegLocator.FindFfprobe(_ffmpegPath);
 
-        Text = "Video Grid Studio";
+        Text = "MediaGenie";
         Icon = AppIcon.Value;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(960, 640);

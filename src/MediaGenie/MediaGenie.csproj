@@ -11,8 +11,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <AssemblyName>VideoGridStudio</AssemblyName>
-    <RootNamespace>VideoGridStudio</RootNamespace>
+    <AssemblyName>MediaGenie</AssemblyName>
+    <RootNamespace>MediaGenie</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resources\AppIcon.ico</ApplicationIcon>
     <Platforms>AnyCPU;x64</Platforms>

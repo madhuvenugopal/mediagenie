@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Playback;
+namespace MediaGenie.Playback;
 
 public sealed class PlaybackProgressEventArgs : EventArgs
 {

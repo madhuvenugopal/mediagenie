@@ -1118,10 +1118,10 @@ public partial class MainWindow : Window
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
     {
         MessageBox.Show(
-            "Multimedia Player\n\nWPF UI, LibVLC for video, NAudio for audio playback and microphone recording.\n" +
+            "MediaGenie\n\nWPF UI, LibVLC for video, NAudio for audio playback and microphone recording.\n" +
             "A shared 7-band equalizer applies to both engines; settings are stored in the registry.\n\n" +
             "Design and Creation by Madhu Venugopal\nEmail: madhuvenugopal@yahoo.com",
-            "About Multimedia Player", MessageBoxButton.OK, MessageBoxImage.Information);
+            "About MediaGenie", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     // ----- VideoCreator (grid / sequential playback tools) -----
@@ -1143,7 +1143,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var launcher = new VideoGridStudio.Forms.LauncherForm(creatorLibVlc);
+        var launcher = new MediaGenie.Forms.LauncherForm(creatorLibVlc);
         launcher.FormClosed += (_, _) => creatorLibVlc.Dispose();
         launcher.Show();
     }

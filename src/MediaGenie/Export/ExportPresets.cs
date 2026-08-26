@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>Output choices shared by both the grid and sequential export dialogs.</summary>
 public static class ExportPresets

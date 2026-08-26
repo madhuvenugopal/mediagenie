@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text;
-using VideoGridStudio.Models;
-using VideoGridStudio.Rendering;
+using MediaGenie.Models;
+using MediaGenie.Rendering;
 
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>
 /// Turns the grid into a single FFmpeg job where every clip plays in its own tile position,

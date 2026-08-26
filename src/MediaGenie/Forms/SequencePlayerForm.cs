@@ -2,13 +2,13 @@ using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
-using VideoGridStudio.Controls;
-using VideoGridStudio.Export;
-using VideoGridStudio.Models;
-using VideoGridStudio.Playback;
-using VideoGridStudio.Rendering;
+using MediaGenie.Controls;
+using MediaGenie.Export;
+using MediaGenie.Models;
+using MediaGenie.Playback;
+using MediaGenie.Rendering;
 
-namespace VideoGridStudio.Forms;
+namespace MediaGenie.Forms;
 
 /// <summary>
 /// The same Meet-style grid of tiles as ClipPlayerForm, but clips play one after another in
@@ -51,7 +51,7 @@ public sealed class SequencePlayerForm : Form
     private VideoCellControl? _previewCell;
     private MediaPlayer? _previewPlayer;
 
-    private readonly string _thumbnailDirectory = Path.Combine(Path.GetTempPath(), "VideoGridStudio", "thumbnails");
+    private readonly string _thumbnailDirectory = Path.Combine(Path.GetTempPath(), "MediaGenie", "thumbnails");
 
     private string? _ffmpegPath;
     private string? _ffprobePath;
@@ -64,7 +64,7 @@ public sealed class SequencePlayerForm : Form
         _ffprobePath = FfmpegLocator.FindFfprobe(_ffmpegPath);
         Directory.CreateDirectory(_thumbnailDirectory);
 
-        Text = "Video Grid Studio - Play in order";
+        Text = "MediaGenie - Play in order";
         Icon = AppIcon.Value;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(960, 640);

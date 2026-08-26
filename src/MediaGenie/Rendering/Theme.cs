@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace VideoGridStudio.Rendering;
+namespace MediaGenie.Rendering;
 
 /// <summary>Single place for the colours used by both the on-screen grid and the exported frame.</summary>
 public static class Theme

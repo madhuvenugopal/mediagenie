@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
         xmlns:controls="clr-namespace:MkvPlayer.Controls"
-        Title="Multimedia Player" Height="720" Width="1200" MinWidth="640" MinHeight="420"
+        Title="MediaGenie" Height="720" Width="1200" MinWidth="640" MinHeight="420"
         Icon="pack://application:,,,/Resources/AppIcon.ico"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E"
@@ -289,7 +289,7 @@
                         <MenuItem Header="_Preferences..." Click="PreferencesMenuItem_Click"/>
                     </MenuItem>
                     <MenuItem Header="_Help" Foreground="White">
-                        <MenuItem Header="_About Multimedia Player" Click="AboutMenuItem_Click"/>
+                        <MenuItem Header="_About MediaGenie" Click="AboutMenuItem_Click"/>
                     </MenuItem>
                     <MenuItem Header="_VideoCreator" Style="{StaticResource VideoCreatorMenuItemStyle}" Click="VideoCreatorMenuItem_Click"/>
                 </Menu>
@@ -406,7 +406,7 @@
                                         <Ellipse Stroke="White" StrokeThickness="4"/>
                                         <Polygon Points="46,35 46,85 88,60" Fill="White"/>
                                     </Grid>
-                                    <TextBlock Text="MKV / MP4 Player · Video Grid Studio" Foreground="White" Opacity="0.55" FontSize="22" FontWeight="Bold"
+                                    <TextBlock Text="MediaGenie" Foreground="White" Opacity="0.55" FontSize="22" FontWeight="Bold"
                                                HorizontalAlignment="Center" Margin="0,0,0,10"/>
                                     <TextBlock Foreground="White" Opacity="0.4" FontSize="13" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,16">
                                         Video via LibVLC, audio and voice recording via NAudio, a shared 7-band equalizer with karaoke vocal fade, and a VideoCreator grid tool that combines clips into one video -- or a portrait phone status.

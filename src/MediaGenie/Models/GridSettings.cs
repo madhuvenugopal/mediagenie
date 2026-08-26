@@ -1,4 +1,4 @@
-namespace VideoGridStudio.Models;
+namespace MediaGenie.Models;
 
 /// <summary>Everything that controls how the grid looks and how it is exported.</summary>
 public sealed class GridSettings

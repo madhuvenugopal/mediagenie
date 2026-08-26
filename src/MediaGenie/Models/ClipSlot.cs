@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace VideoGridStudio.Models;
+namespace MediaGenie.Models;
 
 /// <summary>One position in the grid, plus the clip (if any) assigned to it.</summary>
 public sealed class ClipSlot

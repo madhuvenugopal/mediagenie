@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace VideoGridStudio.Export;
+namespace MediaGenie.Export;
 
 /// <summary>Small settings file so the app remembers where FFmpeg lives.</summary>
 public sealed class AppSettings
@@ -20,7 +20,7 @@ public sealed class AppSettings
 
     public static string SettingsPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "VideoGridStudio",
+        "MediaGenie",
         "settings.json");
 
     public static AppSettings Load()

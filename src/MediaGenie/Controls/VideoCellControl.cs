@@ -4,10 +4,10 @@ using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
-using VideoGridStudio.Models;
-using VideoGridStudio.Rendering;
+using MediaGenie.Models;
+using MediaGenie.Rendering;
 
-namespace VideoGridStudio.Controls;
+namespace MediaGenie.Controls;
 
 /// <summary>
 /// One tile of the grid. It stacks two surfaces on top of each other: a painted

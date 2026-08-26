@@ -1,10 +1,10 @@
 using System.Drawing;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
-using VideoGridStudio.Controls;
-using VideoGridStudio.Models;
+using MediaGenie.Controls;
+using MediaGenie.Models;
 
-namespace VideoGridStudio.Playback;
+namespace MediaGenie.Playback;
 
 /// <summary>
 /// Plays the same grid of tiles as GridPlayer, but one clip at a time in grid order --
@@ -36,7 +36,7 @@ public sealed class SequentialGridPlayer : IDisposable
         _libVlc = libVlc;
         _uiContext = uiContext;
 
-        _snapshotDirectory = Path.Combine(Path.GetTempPath(), "VideoGridStudio", "frames-sequential");
+        _snapshotDirectory = Path.Combine(Path.GetTempPath(), "MediaGenie", "frames-sequential");
         Directory.CreateDirectory(_snapshotDirectory);
 
         _ticker = new System.Windows.Forms.Timer { Interval = 200 };
