@@ -218,17 +218,57 @@ public partial class MainWindow : Window
     // evaluated before MainTabControl is assigned (see the IsLoaded guard above).
     private int ActiveTabIndex => MainTabControl?.SelectedIndex ?? 0;
 
+    // ----- Tab switcher row (Video / Audio / Equalizer / Track Separation / Voice Record) -----
+
+    // Each RadioButton just points MainTabControl.SelectedIndex at the tab it stands for --
+    // MainTabControl_SelectionChanged (which everything else in this file already keys off via
+    // ActiveTabIndex) picks it up from there, same as if the native tab header had been clicked.
+    // VideoTabButton's IsChecked="True" in XAML fires this Checked handler while
+    // InitializeComponent() is still running and MainTabControl hasn't been assigned yet -- the
+    // same hazard MainTabControl_SelectionChanged already guards against with this same check.
+    private void VideoTabButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        MainTabControl.SelectedIndex = 0;
+    }
+
+    private void AudioTabButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        MainTabControl.SelectedIndex = 1;
+    }
+
+    private void VoiceRecordTabButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        MainTabControl.SelectedIndex = 2;
+    }
+
     private void UpdateTransportBarForActiveTab()
     {
+        // Keep the tab-switcher row's RadioButtons in sync with whatever actually changed
+        // MainTabControl.SelectedIndex. Today that's only ever these RadioButtons themselves
+        // (see TabRadioButton_Checked below), but syncing here too -- rather than assuming it
+        // can't happen -- means this doesn't quietly break if that ever stops being true.
+        var activeTabButton = ActiveTabIndex switch
+        {
+            0 => VideoTabButton,
+            1 => AudioTabButton,
+            _ => VoiceRecordTabButton,
+        };
+        if (activeTabButton.IsChecked != true) activeTabButton.IsChecked = true;
+
         var isVoiceRecordTab = ActiveTabIndex == 2;
         TransportBar.Visibility = isVoiceRecordTab ? Visibility.Collapsed : Visibility.Visible;
         FullscreenButton.Visibility = ActiveTabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-        // The karaoke effect only applies to the NAudio-driven Audio tab's sample chain --
-        // there's nothing for it to act on while the Video tab's LibVLC engine is active.
+        // The karaoke effect (and Track Separation, which drives the same NAudio sample chain)
+        // only applies on the NAudio-driven Audio tab -- there's nothing for either to act on
+        // while the Video tab's LibVLC engine is active.
         var karaokeVisibility = ActiveTabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
         KaraokeLabel.Visibility = karaokeVisibility;
         KaraokeSlider.Visibility = karaokeVisibility;
+        TrackSeparationTabButton.Visibility = karaokeVisibility;
 
         _suppressVolumeEvent = true;
         VolumeSlider.Value = ActiveTabIndex == 1 ? _audioEngine.Volume * 100 : _mediaPlayer?.Volume ?? 100;

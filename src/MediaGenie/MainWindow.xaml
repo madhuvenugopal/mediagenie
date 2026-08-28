@@ -170,6 +170,77 @@
             </Setter>
         </Style>
 
+        <!-- Same metal bevel as the Button style above, but for the Video/Audio/Voice Record
+             tab-switcher row: a RadioButton (grouped, so only one is ever checked) instead of a
+             Button, with an extra IsChecked trigger that keeps the active tab permanently in the
+             "pressed in" look: green border, darker recessed gradient, nudged content, the
+             same visual state Button only shows momentarily on IsPressed. -->
+        <Style x:Key="TabRadioButtonStyle" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#DCEBDD"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bevel" CornerRadius="2" BorderThickness="1" BorderBrush="#0A0A0A">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#6A6A6A" Offset="0"/>
+                                    <GradientStop Color="#4A4A4A" Offset="0.45"/>
+                                    <GradientStop Color="#2C2C2C" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border BorderThickness="1,1,0,0" BorderBrush="#33FFFFFF" CornerRadius="2" Margin="1">
+                                <ContentPresenter x:Name="Presenter" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"/>
+                            </Border>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bevel" Property="BorderBrush" Value="#3FB552"/>
+                                <Setter TargetName="Bevel" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#7C7C7C" Offset="0"/>
+                                            <GradientStop Color="#585858" Offset="0.45"/>
+                                            <GradientStop Color="#363636" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bevel" Property="BorderBrush" Value="#3FB552"/>
+                                <Setter TargetName="Bevel" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#222222" Offset="0"/>
+                                            <GradientStop Color="#3A3A3A" Offset="0.55"/>
+                                            <GradientStop Color="#525252" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Presenter" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform X="1" Y="1"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Hides the native tab-header strip that TabControl draws above its content: the
+             Video/Audio/Voice Record TabItems below are still what actually switches content and
+             still own the SelectedIndex everything else in this file reads, but the row of
+             RadioButton/Button controls further down (the one with Equalizer and Track
+             Separation spliced in) is what the user actually sees and clicks. -->
+        <Style TargetType="TabPanel">
+            <Setter Property="Visibility" Value="Collapsed"/>
+        </Style>
+
         <!-- Winamp-style slider chrome: a slim sunken groove, a green fill up to the thumb, and
              a beveled metal thumb, using the same brushed-metal language as the Button style
              above. Applied as an implicit Style (no x:Key), so it covers every Slider in the
@@ -296,21 +367,41 @@
                 </Menu>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,3,8,3">
-                    <!-- Opens the same Preferences window the Tools menu does; the equalizer
-                         lives there alongside the default media folder setting, so this is just
-                         a one-click shortcut to it, styled like a classic Winamp "EQ" button. -->
-                    <Button x:Name="EqualizerButton" Click="PreferencesMenuItem_Click" Padding="8,2"
-                            Margin="0,0,4,0" VerticalAlignment="Center" ToolTip="Equalizer" Content="EQ"/>
-
                     <!-- Common mute toggle: applies to whichever engine (LibVLC video or NAudio
                          audio) is behind the currently-active tab, same as VolumeSlider/KaraokeSlider
-                         already do; see MuteButton_Click. -->
+                         already do; see MuteButton_Click. The Equalizer button that used to live
+                         here moved into the tab-switcher row below, next to Track Separation. -->
                     <Button x:Name="MuteButton" Click="MuteButton_Click" Padding="8,2"
                             VerticalAlignment="Center" ToolTip="Mute">
                         <TextBlock x:Name="MuteButtonIcon" Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                     </Button>
                 </StackPanel>
             </Grid>
+
+            <!-- Tab switcher: stands in for MainTabControl's own header strip (hidden via the
+                 TabPanel style above) so Equalizer and Track Separation can sit in the same row,
+                 right after Audio, without being real tabs themselves. Video/Audio/Voice Record
+                 are RadioButtons (mutually exclusive by GroupName), each pointing
+                 MainTabControl.SelectedIndex at the tab it stands for on Checked (see
+                 VideoTabButton_Checked and friends below), so every piece of ActiveTabIndex-based
+                 logic elsewhere in this file keeps working unchanged. Equalizer and Track
+                 Separation are plain action buttons, reusing the same handlers as their
+                 Tools-menu equivalents. -->
+            <Border DockPanel.Dock="Top" Background="#1E1E1E" Padding="8,6"
+                    BorderBrush="#3F3F46" BorderThickness="0,0,0,1">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="VideoTabButton" GroupName="MainTabs" Style="{StaticResource TabRadioButtonStyle}"
+                                 Content="Video" Padding="14,4" IsChecked="True" Checked="VideoTabButton_Checked"/>
+                    <RadioButton x:Name="AudioTabButton" GroupName="MainTabs" Style="{StaticResource TabRadioButtonStyle}"
+                                 Content="Audio" Padding="14,4" Margin="6,0,0,0" Checked="AudioTabButton_Checked"/>
+                    <Button x:Name="EqualizerTabButton" Content="Equalizer" Padding="14,4" Margin="14,0,0,0"
+                            Click="PreferencesMenuItem_Click" ToolTip="Equalizer"/>
+                    <Button x:Name="TrackSeparationTabButton" Content="Track Separation" Padding="14,4" Margin="6,0,0,0"
+                            Click="TrackSeparationMenuItem_Click" ToolTip="Track Separation (Audio tab only)"/>
+                    <RadioButton x:Name="VoiceRecordTabButton" GroupName="MainTabs" Style="{StaticResource TabRadioButtonStyle}"
+                                 Content="Voice Record" Padding="14,4" Margin="14,0,0,0" Checked="VoiceRecordTabButton_Checked"/>
+                </StackPanel>
+            </Border>
 
             <!-- Shared transport bar: drives the Video tab's LibVLC player or the Audio tab's
                  NAudio engine depending which tab is active. Hidden on the Voice Record tab,
