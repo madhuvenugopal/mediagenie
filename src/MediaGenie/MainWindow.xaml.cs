@@ -278,6 +278,10 @@ public partial class MainWindow : Window
         TransportBar.Visibility = isVoiceRecordTab ? Visibility.Collapsed : Visibility.Visible;
         FullscreenButton.Visibility = ActiveTabIndex == VideoTabIndex ? Visibility.Visible : Visibility.Collapsed;
 
+        // Track Separation only acts on the NAudio-driven Audio engine, so hide it entirely
+        // while the Video tab (LibVLC, no Track Separation stage in its chain) is selected.
+        TrackSeparationTabItem.Visibility = ActiveTabIndex == VideoTabIndex ? Visibility.Collapsed : Visibility.Visible;
+
         // The karaoke effect only applies on the NAudio-driven Audio tab -- there's nothing for
         // it to act on while the Video tab's LibVLC engine is active. (Track Separation's own
         // Voice slider drives the same VocalLevel and is always available on its own tab.)

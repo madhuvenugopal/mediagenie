@@ -606,7 +606,7 @@
                                 <Button x:Name="AddAudioFilesButton" Content="Add Files" Click="AddAudioFilesButton_Click" Padding="8,4" Margin="0,0,6,0"/>
                                 <Button x:Name="AddAudioFolderButton" Content="Add Folder" Click="AddAudioFolderButton_Click" Padding="8,4" Margin="0,0,6,0"/>
                                 <Button x:Name="RemoveAudioFileButton" Content="Remove" Click="RemoveAudioFileButton_Click" Padding="8,4" Margin="0,0,6,0"/>
-                                <Button x:Name="ClearAllAudioFilesButton" Content="Clear All" Click="ClearAllAudioFilesButton_Click" Padding="8,4"/>
+                                <Button x:Name="ClearAllAudioFilesButton" Content="Clear" Click="ClearAllAudioFilesButton_Click" Padding="8,4"/>
                             </StackPanel>
                             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,0,8,4">
                                 <Button x:Name="PlaySelectedAudioButton" Content="Play Selected" Click="PlaySelectedAudioButton_Click" Padding="8,4" Margin="0,0,6,0"/>
@@ -771,7 +771,7 @@
                      the Audio tab keeps playing. Only meaningful for the NAudio-driven Audio
                      engine, so the transport bar here falls back to whichever of Video/Audio was
                      last actually selected, see EffectivePlaybackTabIndex. -->
-                <TabItem Header="Track Separation">
+                <TabItem x:Name="TrackSeparationTabItem" Header="Track Separation">
                     <Grid Background="#1E1E1E" Margin="16">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
