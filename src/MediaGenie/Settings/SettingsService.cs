@@ -154,5 +154,8 @@ public static class SettingsService
         public const string EqualizerBands = "EqualizerBands";
         public const string LastActiveTab = "LastActiveTab";
         public const string VocalLevel = "VocalLevel";
+        public const string TrackSeparationDrums = "TrackSeparationDrums";
+        public const string TrackSeparationBass = "TrackSeparationBass";
+        public const string TrackSeparationGuitar = "TrackSeparationGuitar";
     }
 }

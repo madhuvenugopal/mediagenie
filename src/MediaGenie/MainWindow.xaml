@@ -287,6 +287,7 @@
                     </MenuItem>
                     <MenuItem Header="_Tools" Foreground="White">
                         <MenuItem Header="_Preferences..." Click="PreferencesMenuItem_Click"/>
+                        <MenuItem Header="_Track Separation..." Click="TrackSeparationMenuItem_Click"/>
                     </MenuItem>
                     <MenuItem Header="_Help" Foreground="White">
                         <MenuItem Header="_About MediaGenie" Click="AboutMenuItem_Click"/>

@@ -49,6 +49,10 @@
 
     <!-- MkvPlayer's Audio/Voice Record tabs use NAudio instead of LibVLC (see Audio/, Equalizer/). -->
     <PackageReference Include="NAudio" Version="2.2.*" />
+
+    <!-- MP3 encoding for the Track Separation "Save as MP3" export: wraps libmp3lame.dll,
+         which the package copies (both 32- and 64-bit) to the output directory automatically. -->
+    <PackageReference Include="NAudio.Lame" Version="2.1.*" />
   </ItemGroup>
 
   <ItemGroup>

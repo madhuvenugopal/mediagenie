@@ -1,0 +1,180 @@
+<Window x:Class="MkvPlayer.TrackSeparationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Track Separation" Height="520" Width="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#1E1E1E">
+    <Window.Resources>
+        <!-- Invisible large-step buttons either side of the thumb: still clickable/draggable
+             via the track, just no OS chrome drawn for them. -->
+        <Style x:Key="WinampRepeatButtonStyle" TargetType="RepeatButton">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- The classic Winamp EQ slider cap: a squat metallic grip with a few ridge lines,
+             beveled light-to-dark top-to-bottom so it reads as a physical, grabbable handle. -->
+        <Style x:Key="WinampThumbStyle" TargetType="Thumb">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Grid>
+                            <Border CornerRadius="1" BorderThickness="1" BorderBrush="#2A2A28">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#EDEDE8" Offset="0"/>
+                                        <GradientStop Color="#C2C2BA" Offset="0.42"/>
+                                        <GradientStop Color="#8E8E86" Offset="0.55"/>
+                                        <GradientStop Color="#6C6C64" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Margin="5,0">
+                                <Border Height="1" Background="#55554F" Margin="0,1.5,0,1.5"/>
+                                <Border Height="1" Background="#55554F" Margin="0,1.5,0,1.5"/>
+                                <Border Height="1" Background="#55554F" Margin="0,1.5,0,1.5"/>
+                            </StackPanel>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Winamp-style fader: a recessed green-black groove with tick marks either side and a
+             metallic ridged thumb sliding inside it. Built as a vertical slider (matching the
+             Preferences equalizer's template) and then laid on its side with a LayoutTransform,
+             which turns the tick marks from left/right into above/below and the thumb's ridge
+             lines from horizontal into vertical, for free, without a second template. -->
+        <Style x:Key="WinampSliderStyle" TargetType="Slider">
+            <Setter Property="Orientation" Value="Vertical"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="IsSnapToTickEnabled" Value="False"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="LayoutTransform">
+                <Setter.Value>
+                    <RotateTransform Angle="90"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="6"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TickBar Grid.Column="0" Placement="Left" Fill="#4E5A4E" Width="4"
+                                     Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                                     TickFrequency="10" Margin="0,7,0,7"/>
+
+                            <Border Grid.Column="1" Width="8" CornerRadius="2" BorderThickness="1"
+                                    BorderBrush="#0A0A0A" HorizontalAlignment="Center">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#141814" Offset="0"/>
+                                        <GradientStop Color="#20261F" Offset="0.5"/>
+                                        <GradientStop Color="#0C0F0C" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Track Grid.Column="1" x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource WinampRepeatButtonStyle}" Command="Slider.DecreaseLarge"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource WinampRepeatButtonStyle}" Command="Slider.IncreaseLarge"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource WinampThumbStyle}"/>
+                                </Track.Thumb>
+                            </Track>
+
+                            <TickBar Grid.Column="2" Placement="Right" Fill="#4E5A4E" Width="4"
+                                     Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                                     TickFrequency="10" Margin="0,7,0,7"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Track Separation" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+
+        <Border Grid.Row="1" Background="#252526" BorderBrush="#3F3F46" BorderThickness="1" Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="64"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Voice" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                <Slider x:Name="VoiceSlider" Grid.Row="0" Grid.Column="1" Style="{StaticResource WinampSliderStyle}" Height="260"
+                        HorizontalAlignment="Center" ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="VoiceValueLabel" Grid.Row="0" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Drums" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                <Slider x:Name="DrumsSlider" Grid.Row="1" Grid.Column="1" Style="{StaticResource WinampSliderStyle}" Height="260"
+                        HorizontalAlignment="Center" ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="DrumsValueLabel" Grid.Row="1" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Bass" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                <Slider x:Name="BassSlider" Grid.Row="2" Grid.Column="1" Style="{StaticResource WinampSliderStyle}" Height="260"
+                        HorizontalAlignment="Center" ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="BassValueLabel" Grid.Row="2" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Guitar" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                <Slider x:Name="GuitarSlider" Grid.Row="3" Grid.Column="1" Style="{StaticResource WinampSliderStyle}" Height="260"
+                        HorizontalAlignment="Center" ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="GuitarValueLabel" Grid.Row="3" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <TextBlock x:Name="TrackLabel" Grid.Row="2" Text="No track loaded" Foreground="#AAAAAA" FontSize="11"
+                   TextTrimming="CharacterEllipsis" Margin="0,12,0,0"/>
+
+        <TextBlock x:Name="StatusLabel" Grid.Row="3" Text="" Foreground="#6FBF6F" FontSize="11" Margin="0,4,0,0"/>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Close" Width="90" Padding="8,4" Margin="0,0,8,0" Click="CloseButton_Click" IsCancel="True"/>
+            <Button x:Name="SaveButton" Content="Save as MP3..." Width="120" Padding="8,4" Click="SaveButton_Click" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

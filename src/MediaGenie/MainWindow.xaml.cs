@@ -159,6 +159,10 @@ public partial class MainWindow : Window
         KaraokeSlider.Value = vocalLevel;
         _audioEngine.VocalLevel = (float)(vocalLevel / 100.0);
 
+        _audioEngine.DrumsReduction = (float)(SettingsService.GetUserDouble(SettingsService.Keys.TrackSeparationDrums, 0) / 100.0);
+        _audioEngine.BassReduction = (float)(SettingsService.GetUserDouble(SettingsService.Keys.TrackSeparationBass, 0) / 100.0);
+        _audioEngine.GuitarReduction = (float)(SettingsService.GetUserDouble(SettingsService.Keys.TrackSeparationGuitar, 0) / 100.0);
+
         var width = SettingsService.GetUserDouble(SettingsService.Keys.WindowWidth, Width);
         var height = SettingsService.GetUserDouble(SettingsService.Keys.WindowHeight, Height);
         if (width >= MinWidth && height >= MinHeight)
@@ -175,6 +179,9 @@ public partial class MainWindow : Window
         SettingsService.SetUserDoubleArray(SettingsService.Keys.EqualizerBands, _equalizerSettings.BandGainsDb);
         SettingsService.SetUserDouble(SettingsService.Keys.Volume, VolumeSlider.Value);
         SettingsService.SetUserDouble(SettingsService.Keys.VocalLevel, KaraokeSlider.Value);
+        SettingsService.SetUserDouble(SettingsService.Keys.TrackSeparationDrums, _audioEngine.DrumsReduction * 100);
+        SettingsService.SetUserDouble(SettingsService.Keys.TrackSeparationBass, _audioEngine.BassReduction * 100);
+        SettingsService.SetUserDouble(SettingsService.Keys.TrackSeparationGuitar, _audioEngine.GuitarReduction * 100);
 
         if (WindowState == WindowState.Normal)
         {
@@ -1039,6 +1046,22 @@ public partial class MainWindow : Window
         SettingsService.SetUserBool(SettingsService.Keys.EqualizerEnabled, settings.Enabled);
         SettingsService.SetUserDouble(SettingsService.Keys.EqualizerPreamp, settings.PreampDb);
         SettingsService.SetUserDoubleArray(SettingsService.Keys.EqualizerBands, settings.BandGainsDb);
+    }
+
+    // ----- Track Separation -----
+
+    private void TrackSeparationMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var currentSettings = _audioEngine.CurrentTrackSeparation;
+        var window = new TrackSeparationWindow(currentSettings, _audioEngine.CurrentFilePath, _audioEngine.ApplyTrackSeparation) { Owner = this };
+        window.ShowDialog();
+
+        // No Cancel/revert here (unlike Preferences): these sliders are a live control like the
+        // Karaoke slider, not a settings form -- whatever was last previewed just stays applied,
+        // and gets written to the registry the same way, on app exit via SaveSettings().
+        // Keep the Karaoke slider (which drives the very same VocalLevel) in sync so it doesn't
+        // visually drift from what Track Separation's Voice slider just set.
+        KaraokeSlider.Value = (1.0 - window.ResultSettings.VoiceReduction) * 100;
     }
 
     // ----- Voice Record tab -----
