@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,6 +25,15 @@ public partial class MainWindow : Window
 
     private const string PlayGlyph = "▶";  // ▶
     private const string PauseGlyph = "‖"; // ‖
+
+    // MainTabControl's SelectedIndex, now that Equalizer/Track Separation sit between Audio and
+    // Voice Record as real tabs (added so both can be worked on live while something plays,
+    // rather than in a modal window).
+    private const int VideoTabIndex = 0;
+    private const int AudioTabIndex = 1;
+    private const int EqualizerTabIndex = 2;
+    private const int TrackSeparationTabIndex = 3;
+    private const int VoiceRecordTabIndex = 4;
 
     private enum OscilloscopeMode { Fire, Spectrum, Off }
 
@@ -48,6 +58,22 @@ public partial class MainWindow : Window
     private bool _suppressVolumeEvent;
     private double _volumeBeforeMute = 100;
 
+    // Which of Video(0)/Audio(1) the shared transport bar should control -- see
+    // EffectivePlaybackTabIndex. Only updated while literally on one of those two tabs, so it
+    // keeps pointing at whichever engine is actually playing while viewing Equalizer/Track
+    // Separation/Voice Record instead.
+    private int _lastPlaybackTabIndex = VideoTabIndex;
+
+    // ----- Equalizer tab -----
+    private Slider[] _eqBandSliders = Array.Empty<Slider>();
+    private TextBlock[] _eqBandValueLabels = Array.Empty<TextBlock>();
+    private bool _suppressEqTabEvents;
+
+    // ----- Track Separation tab -----
+    private Slider[] _trackSepSliders = Array.Empty<Slider>();
+    private TextBlock[] _trackSepValueLabels = Array.Empty<TextBlock>();
+    private bool _exportingTrackSeparation;
+
     // Default is Fire -- matches the controls' own default Visibility in XAML (Oscilloscope
     // visible, OscilloscopeSpectrum/OscilloscopeOffPanel collapsed).
     private OscilloscopeMode _oscilloscopeMode = OscilloscopeMode.Fire;
@@ -69,6 +95,11 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = this;
+
+        _eqBandSliders = new[] { EqBand0Slider, EqBand1Slider, EqBand2Slider, EqBand3Slider, EqBand4Slider, EqBand5Slider, EqBand6Slider };
+        _eqBandValueLabels = new[] { EqBand0ValueLabel, EqBand1ValueLabel, EqBand2ValueLabel, EqBand3ValueLabel, EqBand4ValueLabel, EqBand5ValueLabel, EqBand6ValueLabel };
+        _trackSepSliders = new[] { TrackSepVoiceSlider, TrackSepDrumsSlider, TrackSepBassSlider, TrackSepGuitarSlider };
+        _trackSepValueLabels = new[] { TrackSepVoiceValueLabel, TrackSepDrumsValueLabel, TrackSepBassValueLabel, TrackSepGuitarValueLabel };
 
         _positionTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _positionTimer.Tick += PositionTimer_Tick;
@@ -149,6 +180,9 @@ public partial class MainWindow : Window
             PreampDb = SettingsService.GetUserDouble(SettingsService.Keys.EqualizerPreamp, 0),
             BandGainsDb = bandGains,
         };
+        SyncEqTabFromSettings();
+
+        DefaultFolderTextBox.Text = SettingsService.GetUserString(SettingsService.Keys.DefaultMediaFolder, string.Empty);
 
         var volume = SettingsService.GetUserDouble(SettingsService.Keys.Volume, 100);
         VolumeSlider.Value = volume;
@@ -182,6 +216,7 @@ public partial class MainWindow : Window
         SettingsService.SetUserDouble(SettingsService.Keys.TrackSeparationDrums, _audioEngine.DrumsReduction * 100);
         SettingsService.SetUserDouble(SettingsService.Keys.TrackSeparationBass, _audioEngine.BassReduction * 100);
         SettingsService.SetUserDouble(SettingsService.Keys.TrackSeparationGuitar, _audioEngine.GuitarReduction * 100);
+        SettingsService.SetUserString(SettingsService.Keys.DefaultMediaFolder, DefaultFolderTextBox.Text);
 
         if (WindowState == WindowState.Normal)
         {
@@ -218,60 +253,45 @@ public partial class MainWindow : Window
     // evaluated before MainTabControl is assigned (see the IsLoaded guard above).
     private int ActiveTabIndex => MainTabControl?.SelectedIndex ?? 0;
 
-    // ----- Tab switcher row (Video / Audio / Equalizer / Track Separation / Voice Record) -----
-
-    // Each RadioButton just points MainTabControl.SelectedIndex at the tab it stands for --
-    // MainTabControl_SelectionChanged (which everything else in this file already keys off via
-    // ActiveTabIndex) picks it up from there, same as if the native tab header had been clicked.
-    // VideoTabButton's IsChecked="True" in XAML fires this Checked handler while
-    // InitializeComponent() is still running and MainTabControl hasn't been assigned yet -- the
-    // same hazard MainTabControl_SelectionChanged already guards against with this same check.
-    private void VideoTabButton_Checked(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Which of Video(0)/Audio(1) the shared transport bar (Play/Pause/Prev/Next/Stop/seek/
+    /// volume) should actually control. On the Video/Audio tabs themselves this is just
+    /// ActiveTabIndex; Equalizer and Track Separation have no player surface of their own, just
+    /// controls that act on whatever's already playing, so they fall back to whichever of
+    /// Video/Audio was last actually selected (see _lastPlaybackTabIndex). Voice Record hides
+    /// the transport bar entirely, so it never reaches here.
+    /// </summary>
+    private int EffectivePlaybackTabIndex => ActiveTabIndex switch
     {
-        if (!IsLoaded) return;
-        MainTabControl.SelectedIndex = 0;
-    }
-
-    private void AudioTabButton_Checked(object sender, RoutedEventArgs e)
-    {
-        if (!IsLoaded) return;
-        MainTabControl.SelectedIndex = 1;
-    }
-
-    private void VoiceRecordTabButton_Checked(object sender, RoutedEventArgs e)
-    {
-        if (!IsLoaded) return;
-        MainTabControl.SelectedIndex = 2;
-    }
+        VideoTabIndex or AudioTabIndex => ActiveTabIndex,
+        _ => _lastPlaybackTabIndex,
+    };
 
     private void UpdateTransportBarForActiveTab()
     {
-        // Keep the tab-switcher row's RadioButtons in sync with whatever actually changed
-        // MainTabControl.SelectedIndex. Today that's only ever these RadioButtons themselves
-        // (see TabRadioButton_Checked below), but syncing here too -- rather than assuming it
-        // can't happen -- means this doesn't quietly break if that ever stops being true.
-        var activeTabButton = ActiveTabIndex switch
+        if (ActiveTabIndex is VideoTabIndex or AudioTabIndex)
         {
-            0 => VideoTabButton,
-            1 => AudioTabButton,
-            _ => VoiceRecordTabButton,
-        };
-        if (activeTabButton.IsChecked != true) activeTabButton.IsChecked = true;
+            _lastPlaybackTabIndex = ActiveTabIndex;
+        }
 
-        var isVoiceRecordTab = ActiveTabIndex == 2;
+        var isVoiceRecordTab = ActiveTabIndex == VoiceRecordTabIndex;
         TransportBar.Visibility = isVoiceRecordTab ? Visibility.Collapsed : Visibility.Visible;
-        FullscreenButton.Visibility = ActiveTabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        FullscreenButton.Visibility = ActiveTabIndex == VideoTabIndex ? Visibility.Visible : Visibility.Collapsed;
 
-        // The karaoke effect (and Track Separation, which drives the same NAudio sample chain)
-        // only applies on the NAudio-driven Audio tab -- there's nothing for either to act on
-        // while the Video tab's LibVLC engine is active.
-        var karaokeVisibility = ActiveTabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+        // The karaoke effect only applies on the NAudio-driven Audio tab -- there's nothing for
+        // it to act on while the Video tab's LibVLC engine is active. (Track Separation's own
+        // Voice slider drives the same VocalLevel and is always available on its own tab.)
+        var karaokeVisibility = ActiveTabIndex == AudioTabIndex ? Visibility.Visible : Visibility.Collapsed;
         KaraokeLabel.Visibility = karaokeVisibility;
         KaraokeSlider.Visibility = karaokeVisibility;
-        TrackSeparationTabButton.Visibility = karaokeVisibility;
+
+        if (ActiveTabIndex == TrackSeparationTabIndex)
+        {
+            SyncTrackSepTabFromEngine();
+        }
 
         _suppressVolumeEvent = true;
-        VolumeSlider.Value = ActiveTabIndex == 1 ? _audioEngine.Volume * 100 : _mediaPlayer?.Volume ?? 100;
+        VolumeSlider.Value = EffectivePlaybackTabIndex == AudioTabIndex ? _audioEngine.Volume * 100 : _mediaPlayer?.Volume ?? 100;
         VolumeLabel.Text = $"Vol {(int)VolumeSlider.Value}%";
         UpdateMuteButtonIcon(VolumeSlider.Value <= 0);
         _suppressVolumeEvent = false;
@@ -281,11 +301,11 @@ public partial class MainWindow : Window
 
     private void RefreshTransportDisplay()
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             PlayPauseButton.Content = _audioEngine.IsPlaying ? PauseGlyph : PlayGlyph;
         }
-        else if (ActiveTabIndex == 0)
+        else
         {
             PlayPauseButton.Content = (_mediaPlayer?.IsPlaying ?? false) ? PauseGlyph : PlayGlyph;
         }
@@ -645,7 +665,7 @@ public partial class MainWindow : Window
 
     private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             AudioPlayPause();
         }
@@ -714,7 +734,7 @@ public partial class MainWindow : Window
 
     private void PrevButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             AudioPrev();
         }
@@ -726,7 +746,7 @@ public partial class MainWindow : Window
 
     private void NextButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             AudioNext();
         }
@@ -863,7 +883,7 @@ public partial class MainWindow : Window
 
     private void StopButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             _audioEngine.Stop();
             ClearOscilloscopes();
@@ -880,7 +900,7 @@ public partial class MainWindow : Window
 
     private void Back10Button_Click(object sender, RoutedEventArgs e)
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             _audioEngine.CurrentTime -= TimeSpan.FromSeconds(10);
         }
@@ -893,7 +913,7 @@ public partial class MainWindow : Window
 
     private void Fwd10Button_Click(object sender, RoutedEventArgs e)
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             _audioEngine.CurrentTime += TimeSpan.FromSeconds(10);
         }
@@ -914,7 +934,7 @@ public partial class MainWindow : Window
         if (!IsLoaded) return;
         if (_suppressVolumeEvent) return;
 
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             _audioEngine.Volume = (float)(e.NewValue / 100.0);
         }
@@ -976,7 +996,7 @@ public partial class MainWindow : Window
 
         var ratio = SeekSlider.Value / SeekSlider.Maximum;
 
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             if (_audioEngine.TotalTime > TimeSpan.Zero)
             {
@@ -991,7 +1011,7 @@ public partial class MainWindow : Window
 
     private void PositionTimer_Tick(object? sender, EventArgs e)
     {
-        if (ActiveTabIndex == 1)
+        if (EffectivePlaybackTabIndex == AudioTabIndex)
         {
             if (!_isSeeking && _audioEngine.TotalTime > TimeSpan.Zero)
             {
@@ -1000,7 +1020,7 @@ public partial class MainWindow : Window
             }
             TimeLabel.Text = $"{FormatTime((long)_audioEngine.CurrentTime.TotalMilliseconds)} / {FormatTime((long)_audioEngine.TotalTime.TotalMilliseconds)}";
         }
-        else if (ActiveTabIndex == 0 && _mediaPlayer != null)
+        else if (EffectivePlaybackTabIndex == VideoTabIndex && _mediaPlayer != null)
         {
             if (!_isSeeking && _mediaPlayer.Length > 0)
             {
@@ -1038,40 +1058,42 @@ public partial class MainWindow : Window
         OsdBorder.BeginAnimation(OpacityProperty, animation);
     }
 
-    // ----- Preferences / equalizer -----
+    // ----- Equalizer tab -----
 
-    private void PreferencesMenuItem_Click(object sender, RoutedEventArgs e)
+    private void BrowseFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        var previousSettings = _equalizerSettings.Clone();
-        var defaultFolder = SettingsService.GetUserString(SettingsService.Keys.DefaultMediaFolder, string.Empty);
-
-        var window = new PreferencesWindow(_equalizerSettings, defaultFolder, ApplyEqualizerLive) { Owner = this };
-        var saved = window.ShowDialog();
-
-        if (saved == true)
+        var dialog = new OpenFolderDialog { Title = "Choose a default media folder" };
+        if (dialog.ShowDialog() == true)
         {
-            _equalizerSettings = window.ResultSettings;
-            ApplyEqualizerLive(_equalizerSettings);
-            PersistEqualizerSettings(_equalizerSettings);
-
-            SettingsService.SetUserString(SettingsService.Keys.DefaultMediaFolder, window.DefaultMediaFolder);
-
-            if (window.ApplyMachineWide &&
-                !SettingsService.TrySetMachineString(SettingsService.Keys.DefaultMediaFolder, window.DefaultMediaFolder))
-            {
-                MessageBox.Show(
-                    "Couldn't write the machine-wide default (this needs the app running as administrator). Saved for your account only.",
-                    "Preferences", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-        else
-        {
-            // Cancelled: undo whatever the live preview applied while the sliders were dragged.
-            _equalizerSettings = previousSettings;
-            ApplyEqualizerLive(_equalizerSettings);
+            DefaultFolderTextBox.Text = dialog.FolderName;
         }
     }
 
+    // Everything on this tab (equalizer + default folder) also gets persisted at app exit via
+    // SaveSettings(), but that only helps if the app actually gets to run that -- this button
+    // writes both straight to the registry immediately, on demand. "Apply for all users" needs
+    // an elevated HKLM write that can fail, so it's folded in here rather than firing on every
+    // keystroke of its own.
+    private void SaveEqualizerAndFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsService.SetUserBool(SettingsService.Keys.EqualizerEnabled, _equalizerSettings.Enabled);
+        SettingsService.SetUserDouble(SettingsService.Keys.EqualizerPreamp, _equalizerSettings.PreampDb);
+        SettingsService.SetUserDoubleArray(SettingsService.Keys.EqualizerBands, _equalizerSettings.BandGainsDb);
+
+        SettingsService.SetUserString(SettingsService.Keys.DefaultMediaFolder, DefaultFolderTextBox.Text);
+
+        if (ApplyMachineWideCheckBox.IsChecked == true &&
+            !SettingsService.TrySetMachineString(SettingsService.Keys.DefaultMediaFolder, DefaultFolderTextBox.Text))
+        {
+            MessageBox.Show(
+                "Couldn't write the machine-wide default (this needs the app running as administrator). Saved for your account only.",
+                "Default media folder", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    // No Save/Cancel here (unlike the old Preferences dialog): this tab is a live control like
+    // the Karaoke slider, not a settings form, so every slider move applies and persists (on
+    // app exit, via SaveSettings()) immediately.
     private void ApplyEqualizerLive(EqualizerSettings settings)
     {
         _audioEngine.ApplyEqualizer(settings);
@@ -1081,27 +1103,165 @@ public partial class MainWindow : Window
         }
     }
 
-    private void PersistEqualizerSettings(EqualizerSettings settings)
+    private void EqSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        SettingsService.SetUserBool(SettingsService.Keys.EqualizerEnabled, settings.Enabled);
-        SettingsService.SetUserDouble(SettingsService.Keys.EqualizerPreamp, settings.PreampDb);
-        SettingsService.SetUserDoubleArray(SettingsService.Keys.EqualizerBands, settings.BandGainsDb);
+        if (!IsLoaded || _suppressEqTabEvents) return;
+        ApplyEqTabUiToSettings();
+        UpdateEqTabValueLabels();
+        ApplyEqualizerLive(_equalizerSettings);
     }
 
-    // ----- Track Separation -----
-
-    private void TrackSeparationMenuItem_Click(object sender, RoutedEventArgs e)
+    private void EqControl_Changed(object sender, RoutedEventArgs e)
     {
-        var currentSettings = _audioEngine.CurrentTrackSeparation;
-        var window = new TrackSeparationWindow(currentSettings, _audioEngine.CurrentFilePath, _audioEngine.ApplyTrackSeparation) { Owner = this };
-        window.ShowDialog();
+        if (!IsLoaded || _suppressEqTabEvents) return;
+        ApplyEqTabUiToSettings();
+        ApplyEqualizerLive(_equalizerSettings);
+    }
 
-        // No Cancel/revert here (unlike Preferences): these sliders are a live control like the
-        // Karaoke slider, not a settings form -- whatever was last previewed just stays applied,
-        // and gets written to the registry the same way, on app exit via SaveSettings().
-        // Keep the Karaoke slider (which drives the very same VocalLevel) in sync so it doesn't
-        // visually drift from what Track Separation's Voice slider just set.
-        KaraokeSlider.Value = (1.0 - window.ResultSettings.VoiceReduction) * 100;
+    private void ResetEqButton_Click(object sender, RoutedEventArgs e)
+    {
+        EqPreampSlider.Value = 0;
+        foreach (var slider in _eqBandSliders)
+        {
+            slider.Value = 0;
+        }
+        // ValueChanged on each slider above already re-applies and previews the reset.
+    }
+
+    private void ApplyEqTabUiToSettings()
+    {
+        _equalizerSettings.Enabled = EqEnabledCheckBox.IsChecked == true;
+        _equalizerSettings.PreampDb = EqPreampSlider.Value;
+        for (var i = 0; i < _eqBandSliders.Length; i++)
+        {
+            _equalizerSettings.BandGainsDb[i] = _eqBandSliders[i].Value;
+        }
+    }
+
+    private void UpdateEqTabValueLabels()
+    {
+        EqPreampValueLabel.Text = $"{EqPreampSlider.Value:+0.0;-0.0;0.0} dB";
+        for (var i = 0; i < _eqBandSliders.Length; i++)
+        {
+            _eqBandValueLabels[i].Text = $"{_eqBandSliders[i].Value:+0.0;-0.0;0.0} dB";
+        }
+    }
+
+    /// <summary>
+    /// Pushes _equalizerSettings (freshly loaded from the registry) onto the tab's own sliders.
+    /// Guarded with _suppressEqTabEvents because EqEnabledCheckBox's Checked/Unchecked fires
+    /// before the sliders below it are set -- without the guard, that fired EqControl_Changed
+    /// would call ApplyEqTabUiToSettings() and read the sliders' still-stale (XAML-default)
+    /// values, overwriting the very settings this method is about to apply, right before it gets
+    /// to setting them. That's what made a freshly loaded/saved equalizer look reset on restart.
+    /// </summary>
+    private void SyncEqTabFromSettings()
+    {
+        _suppressEqTabEvents = true;
+        try
+        {
+            EqEnabledCheckBox.IsChecked = _equalizerSettings.Enabled;
+            EqPreampSlider.Value = _equalizerSettings.PreampDb;
+            for (var i = 0; i < _eqBandSliders.Length && i < _equalizerSettings.BandGainsDb.Length; i++)
+            {
+                _eqBandSliders[i].Value = _equalizerSettings.BandGainsDb[i];
+            }
+        }
+        finally
+        {
+            _suppressEqTabEvents = false;
+        }
+        UpdateEqTabValueLabels();
+    }
+
+    // ----- Track Separation tab -----
+
+    private void TrackSepSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!IsLoaded) return;
+
+        _audioEngine.ApplyTrackSeparation(new TrackSeparationSettings
+        {
+            VoiceReduction = (float)(TrackSepVoiceSlider.Value / 100.0),
+            DrumsReduction = (float)(TrackSepDrumsSlider.Value / 100.0),
+            BassReduction = (float)(TrackSepBassSlider.Value / 100.0),
+            GuitarReduction = (float)(TrackSepGuitarSlider.Value / 100.0),
+        });
+
+        // Keep the Karaoke slider (same underlying VocalLevel) in sync so it doesn't visually
+        // drift from what this tab's Voice slider just set -- the two are never visible at the
+        // same time (different tabs), but SaveSettings() persists VocalLevel from KaraokeSlider.
+        KaraokeSlider.Value = 100 - TrackSepVoiceSlider.Value;
+
+        UpdateTrackSepValueLabels();
+    }
+
+    private void UpdateTrackSepValueLabels()
+    {
+        for (var i = 0; i < _trackSepSliders.Length; i++)
+        {
+            _trackSepValueLabels[i].Text = $"{_trackSepSliders[i].Value:0}%";
+        }
+    }
+
+    /// <summary>
+    /// Pushes AudioEngine's current Track Separation settings (which can change from outside this
+    /// tab, e.g. the Karaoke slider) onto the tab's own sliders, and refreshes the currently
+    /// loaded track's name/Save button. Called whenever this tab becomes active.
+    /// </summary>
+    private void SyncTrackSepTabFromEngine()
+    {
+        var settings = _audioEngine.CurrentTrackSeparation;
+        TrackSepVoiceSlider.Value = settings.VoiceReduction * 100;
+        TrackSepDrumsSlider.Value = settings.DrumsReduction * 100;
+        TrackSepBassSlider.Value = settings.BassReduction * 100;
+        TrackSepGuitarSlider.Value = settings.GuitarReduction * 100;
+        UpdateTrackSepValueLabels();
+
+        var currentFilePath = _audioEngine.CurrentFilePath;
+        TrackSepTrackLabel.Text = string.IsNullOrEmpty(currentFilePath)
+            ? "No track loaded -- play a track on the Audio tab to save it as MP3."
+            : $"Track: {Path.GetFileName(currentFilePath)}";
+        TrackSepSaveButton.IsEnabled = !string.IsNullOrEmpty(currentFilePath) && !_exportingTrackSeparation;
+    }
+
+    private async void TrackSepSaveButton_Click(object sender, RoutedEventArgs e)
+    {
+        var currentFilePath = _audioEngine.CurrentFilePath;
+        if (_exportingTrackSeparation || string.IsNullOrEmpty(currentFilePath)) return;
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save as MP3",
+            Filter = "MP3 Audio (*.mp3)|*.mp3",
+            FileName = Path.GetFileNameWithoutExtension(currentFilePath) + ".mp3",
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        var settings = _audioEngine.CurrentTrackSeparation;
+        var destinationPath = dialog.FileName;
+
+        _exportingTrackSeparation = true;
+        TrackSepSaveButton.IsEnabled = false;
+        TrackSepStatusLabel.Foreground = System.Windows.Media.Brushes.LightGray;
+        TrackSepStatusLabel.Text = "Saving...";
+
+        try
+        {
+            await Task.Run(() => TrackSeparationExporter.ExportToMp3(currentFilePath, destinationPath, settings));
+            TrackSepStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6F, 0xBF, 0x6F));
+            TrackSepStatusLabel.Text = $"Saved to {Path.GetFileName(destinationPath)}";
+        }
+        catch (Exception ex)
+        {
+            TrackSepStatusLabel.Foreground = System.Windows.Media.Brushes.IndianRed;
+            TrackSepStatusLabel.Text = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            _exportingTrackSeparation = false;
+            TrackSepSaveButton.IsEnabled = true;
+        }
     }
 
     // ----- Voice Record tab -----

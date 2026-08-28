@@ -170,75 +170,186 @@
             </Setter>
         </Style>
 
-        <!-- Same metal bevel as the Button style above, but for the Video/Audio/Voice Record
-             tab-switcher row: a RadioButton (grouped, so only one is ever checked) instead of a
-             Button, with an extra IsChecked trigger that keeps the active tab permanently in the
-             "pressed in" look: green border, darker recessed gradient, nudged content, the
-             same visual state Button only shows momentarily on IsPressed. -->
-        <Style x:Key="TabRadioButtonStyle" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#DCEBDD"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!-- Winamp graphic-EQ fader: a recessed metal groove with a beveled cap thumb, the same
+             gradient language as the Button style above, used by the Equalizer tab's Preamp and
+             7 band sliders in place of the transport bar's own implicit Slider style (that one's
+             a horizontal green-fill seek/volume look; these are vertical, centered on 0). Keyed
+             (not implicit) so it applies only where explicitly requested via Style="", leaving
+             SeekSlider/VolumeSlider/KaraokeSlider on their own implicit Slider style below. -->
+        <Style x:Key="EqFaderSliderStyle" TargetType="Slider">
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Bevel" CornerRadius="2" BorderThickness="1" BorderBrush="#0A0A0A">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                    <GradientStop Color="#6A6A6A" Offset="0"/>
-                                    <GradientStop Color="#4A4A4A" Offset="0.45"/>
-                                    <GradientStop Color="#2C2C2C" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
-                            <Border BorderThickness="1,1,0,0" BorderBrush="#33FFFFFF" CornerRadius="2" Margin="1">
-                                <ContentPresenter x:Name="Presenter" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                   Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"/>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Border Width="6" HorizontalAlignment="Center" CornerRadius="2"
+                                    BorderThickness="1" BorderBrush="#0A0A0A">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#0C0C0C" Offset="0"/>
+                                        <GradientStop Color="#202020" Offset="0.5"/>
+                                        <GradientStop Color="#0C0C0C" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
                             </Border>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bevel" Property="BorderBrush" Value="#3FB552"/>
-                                <Setter TargetName="Bevel" Property="Background">
-                                    <Setter.Value>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="#7C7C7C" Offset="0"/>
-                                            <GradientStop Color="#585858" Offset="0.45"/>
-                                            <GradientStop Color="#363636" Offset="1"/>
-                                        </LinearGradientBrush>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bevel" Property="BorderBrush" Value="#3FB552"/>
-                                <Setter TargetName="Bevel" Property="Background">
-                                    <Setter.Value>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="#222222" Offset="0"/>
-                                            <GradientStop Color="#3A3A3A" Offset="0.55"/>
-                                            <GradientStop Color="#525252" Offset="1"/>
-                                        </LinearGradientBrush>
-                                    </Setter.Value>
-                                </Setter>
-                                <Setter TargetName="Presenter" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <TranslateTransform X="1" Y="1"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
+                            <Rectangle Width="18" Height="1" Fill="#3F6B36" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge" Focusable="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Rectangle Fill="Transparent"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge" Focusable="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Rectangle Fill="Transparent"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb x:Name="Thumb" Width="26" Height="14" Focusable="False">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="Cap" CornerRadius="2" BorderThickness="1" BorderBrush="#0A0A0A">
+                                                    <Border.Background>
+                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                            <GradientStop Color="#8C8C8C" Offset="0"/>
+                                                            <GradientStop Color="#5C5C5C" Offset="0.5"/>
+                                                            <GradientStop Color="#333333" Offset="1"/>
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
+                                                    <Rectangle Height="1" Fill="#40FFFFFF" VerticalAlignment="Top" Margin="2,1,2,0"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="Cap" Property="BorderBrush" Value="#3FB552"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
-        <!-- Hides the native tab-header strip that TabControl draws above its content: the
-             Video/Audio/Voice Record TabItems below are still what actually switches content and
-             still own the SelectedIndex everything else in this file reads, but the row of
-             RadioButton/Button controls further down (the one with Equalizer and Track
-             Separation spliced in) is what the user actually sees and clicks. -->
-        <Style TargetType="TabPanel">
-            <Setter Property="Visibility" Value="Collapsed"/>
+        <!-- Invisible large-step buttons either side of the Track Separation thumb below: still
+             clickable/draggable via the track, just no OS chrome drawn for them. -->
+        <Style x:Key="TrackSepRepeatButtonStyle" TargetType="RepeatButton">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- The classic Winamp EQ slider cap: a squat metallic grip with a few ridge lines,
+             beveled light-to-dark top-to-bottom so it reads as a physical, grabbable handle. -->
+        <Style x:Key="TrackSepThumbStyle" TargetType="Thumb">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Grid>
+                            <Border CornerRadius="1" BorderThickness="1" BorderBrush="#2A2A28">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#EDEDE8" Offset="0"/>
+                                        <GradientStop Color="#C2C2BA" Offset="0.42"/>
+                                        <GradientStop Color="#8E8E86" Offset="0.55"/>
+                                        <GradientStop Color="#6C6C64" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Margin="5,0">
+                                <Border Height="1" Background="#55554F" Margin="0,1.5,0,1.5"/>
+                                <Border Height="1" Background="#55554F" Margin="0,1.5,0,1.5"/>
+                                <Border Height="1" Background="#55554F" Margin="0,1.5,0,1.5"/>
+                            </StackPanel>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Winamp-style fader: a recessed green-black groove with tick marks either side and a
+             metallic ridged thumb sliding inside it. Built as a vertical slider and then laid on
+             its side with a LayoutTransform, which turns the tick marks from left/right into
+             above/below and the thumb's ridge lines from horizontal into vertical, for free,
+             without a second template, used by the Track Separation tab's 4 faders, which read
+             left-to-right rather than the Equalizer tab's up-down bands. -->
+        <Style x:Key="TrackSepSliderStyle" TargetType="Slider">
+            <Setter Property="Orientation" Value="Vertical"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="IsSnapToTickEnabled" Value="False"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="LayoutTransform">
+                <Setter.Value>
+                    <RotateTransform Angle="90"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="6"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TickBar Grid.Column="0" Placement="Left" Fill="#4E5A4E" Width="4"
+                                     Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                                     TickFrequency="10" Margin="0,7,0,7"/>
+
+                            <Border Grid.Column="1" Width="8" CornerRadius="2" BorderThickness="1"
+                                    BorderBrush="#0A0A0A" HorizontalAlignment="Center">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#141814" Offset="0"/>
+                                        <GradientStop Color="#20261F" Offset="0.5"/>
+                                        <GradientStop Color="#0C0F0C" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Track Grid.Column="1" x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource TrackSepRepeatButtonStyle}" Command="Slider.DecreaseLarge"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource TrackSepRepeatButtonStyle}" Command="Slider.IncreaseLarge"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource TrackSepThumbStyle}"/>
+                                </Track.Thumb>
+                            </Track>
+
+                            <TickBar Grid.Column="2" Placement="Right" Fill="#4E5A4E" Width="4"
+                                     Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                                     TickFrequency="10" Margin="0,7,0,7"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Winamp-style slider chrome: a slim sunken groove, a green fill up to the thumb, and
@@ -356,10 +467,6 @@
                         <Separator/>
                         <MenuItem Header="E_xit" Click="ExitMenuItem_Click"/>
                     </MenuItem>
-                    <MenuItem Header="_Tools" Foreground="White">
-                        <MenuItem Header="_Preferences..." Click="PreferencesMenuItem_Click"/>
-                        <MenuItem Header="_Track Separation..." Click="TrackSeparationMenuItem_Click"/>
-                    </MenuItem>
                     <MenuItem Header="_Help" Foreground="White">
                         <MenuItem Header="_About MediaGenie" Click="AboutMenuItem_Click"/>
                     </MenuItem>
@@ -369,39 +476,13 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,3,8,3">
                     <!-- Common mute toggle: applies to whichever engine (LibVLC video or NAudio
                          audio) is behind the currently-active tab, same as VolumeSlider/KaraokeSlider
-                         already do; see MuteButton_Click. The Equalizer button that used to live
-                         here moved into the tab-switcher row below, next to Track Separation. -->
+                         already do; see MuteButton_Click. -->
                     <Button x:Name="MuteButton" Click="MuteButton_Click" Padding="8,2"
                             VerticalAlignment="Center" ToolTip="Mute">
                         <TextBlock x:Name="MuteButtonIcon" Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                     </Button>
                 </StackPanel>
             </Grid>
-
-            <!-- Tab switcher: stands in for MainTabControl's own header strip (hidden via the
-                 TabPanel style above) so Equalizer and Track Separation can sit in the same row,
-                 right after Audio, without being real tabs themselves. Video/Audio/Voice Record
-                 are RadioButtons (mutually exclusive by GroupName), each pointing
-                 MainTabControl.SelectedIndex at the tab it stands for on Checked (see
-                 VideoTabButton_Checked and friends below), so every piece of ActiveTabIndex-based
-                 logic elsewhere in this file keeps working unchanged. Equalizer and Track
-                 Separation are plain action buttons, reusing the same handlers as their
-                 Tools-menu equivalents. -->
-            <Border DockPanel.Dock="Top" Background="#1E1E1E" Padding="8,6"
-                    BorderBrush="#3F3F46" BorderThickness="0,0,0,1">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="VideoTabButton" GroupName="MainTabs" Style="{StaticResource TabRadioButtonStyle}"
-                                 Content="Video" Padding="14,4" IsChecked="True" Checked="VideoTabButton_Checked"/>
-                    <RadioButton x:Name="AudioTabButton" GroupName="MainTabs" Style="{StaticResource TabRadioButtonStyle}"
-                                 Content="Audio" Padding="14,4" Margin="6,0,0,0" Checked="AudioTabButton_Checked"/>
-                    <Button x:Name="EqualizerTabButton" Content="Equalizer" Padding="14,4" Margin="14,0,0,0"
-                            Click="PreferencesMenuItem_Click" ToolTip="Equalizer"/>
-                    <Button x:Name="TrackSeparationTabButton" Content="Track Separation" Padding="14,4" Margin="6,0,0,0"
-                            Click="TrackSeparationMenuItem_Click" ToolTip="Track Separation (Audio tab only)"/>
-                    <RadioButton x:Name="VoiceRecordTabButton" GroupName="MainTabs" Style="{StaticResource TabRadioButtonStyle}"
-                                 Content="Voice Record" Padding="14,4" Margin="14,0,0,0" Checked="VoiceRecordTabButton_Checked"/>
-                </StackPanel>
-            </Border>
 
             <!-- Shared transport bar: drives the Video tab's LibVLC player or the Audio tab's
                  NAudio engine depending which tab is active. Hidden on the Voice Record tab,
@@ -579,6 +660,177 @@
                                 </Border>
                             </Grid>
                         </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- ===================== Equalizer tab ===================== -->
+                <!-- The same shared 7-band equalizer AudioEngine.ApplyEqualizer/LibVlcEqualizerAdapter
+                     already apply to both engines, just embedded here instead of behind the old
+                     Preferences dialog, so it can be adjusted live while something keeps playing
+                     on the Video or Audio tab, transport bar included (see EffectivePlaybackTabIndex). -->
+                <TabItem Header="Equalizer">
+                    <Grid Background="#1E1E1E" Margin="16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Graphic Equalizer" Foreground="White" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="EqEnabledCheckBox" Content="Enabled" Foreground="White" Margin="20,0,0,0"
+                                      VerticalAlignment="Center" Checked="EqControl_Changed" Unchecked="EqControl_Changed"/>
+                            <Button x:Name="ResetEqButton" Content="Reset" Padding="8,2" Margin="20,0,0,0" Click="ResetEqButton_Click"/>
+                        </StackPanel>
+
+                        <Border Grid.Row="1" Background="#252526" BorderBrush="#3F3F46" BorderThickness="1" Padding="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Preamp -->
+                                <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,0,16,0">
+                                    <TextBlock Text="Preamp" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                    <Slider x:Name="EqPreampSlider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                            TickFrequency="3" IsSnapToTickEnabled="False" ValueChanged="EqSlider_ValueChanged"
+                                            Margin="0,8,0,12"/>
+                                    <TextBlock x:Name="EqPreampValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- 7 bands -->
+                                <UniformGrid Grid.Column="1" Rows="1" Columns="7">
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <TextBlock Text="60 Hz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Slider x:Name="EqBand0Slider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,12"/>
+                                        <TextBlock x:Name="EqBand0ValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <TextBlock Text="310 Hz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Slider x:Name="EqBand1Slider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,12"/>
+                                        <TextBlock x:Name="EqBand1ValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <TextBlock Text="600 Hz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Slider x:Name="EqBand2Slider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,12"/>
+                                        <TextBlock x:Name="EqBand2ValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <TextBlock Text="1 kHz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Slider x:Name="EqBand3Slider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,12"/>
+                                        <TextBlock x:Name="EqBand3ValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <TextBlock Text="3 kHz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Slider x:Name="EqBand4Slider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,12"/>
+                                        <TextBlock x:Name="EqBand4ValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <TextBlock Text="6 kHz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Slider x:Name="EqBand5Slider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,12"/>
+                                        <TextBlock x:Name="EqBand5ValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <TextBlock Text="12 kHz" Foreground="#AAAAAA" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Slider x:Name="EqBand6Slider" Style="{StaticResource EqFaderSliderStyle}" Orientation="Vertical" Height="248" Minimum="-12" Maximum="12" Value="0"
+                                                ValueChanged="EqSlider_ValueChanged" Margin="0,8,0,12"/>
+                                        <TextBlock x:Name="EqBand6ValueLabel" Text="0.0 dB" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </UniformGrid>
+                            </Grid>
+                        </Border>
+
+                        <!-- Default media folder (moved here from the old Preferences dialog,
+                             which had nothing left in it once the equalizer got its own tab). -->
+                        <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,16,0,0">
+                            <TextBlock Text="Default media folder" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="DefaultFolderTextBox" Width="280" Padding="6,4" VerticalContentAlignment="Center"/>
+                                <Button Content="Browse..." Padding="10,4" Margin="8,0,0,0" Click="BrowseFolderButton_Click"/>
+                                <CheckBox x:Name="ApplyMachineWideCheckBox" Content="Apply for all users"
+                                          Foreground="White" VerticalAlignment="Center" Margin="12,0,0,0"
+                                          ToolTip="Requires running as administrator. Falls back to just this user if not elevated."/>
+                                <Button Content="Save" Padding="10,4" Margin="12,0,0,0" Click="SaveEqualizerAndFolderButton_Click"
+                                        ToolTip="Saves the equalizer and default media folder to the registry now (writes the folder machine-wide too if 'Apply for all users' is checked)."/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <!-- ===================== Track Separation tab ===================== -->
+                <!-- Approximate voice/drums/bass/guitar removal (see InstrumentBandReducerSampleProvider
+                     for why it's frequency-band DSP, not true stem isolation) plus a Save-as-MP3
+                     export, embedded here instead of a modal window so it can be adjusted while
+                     the Audio tab keeps playing. Only meaningful for the NAudio-driven Audio
+                     engine, so the transport bar here falls back to whichever of Video/Audio was
+                     last actually selected, see EffectivePlaybackTabIndex. -->
+                <TabItem Header="Track Separation">
+                    <Grid Background="#1E1E1E" Margin="16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Track Separation" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                        <Border Grid.Row="1" Background="#252526" BorderBrush="#3F3F46" BorderThickness="1" Padding="16">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="64"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="50"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Voice" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                <Slider x:Name="TrackSepVoiceSlider" Grid.Row="0" Grid.Column="1" Style="{StaticResource TrackSepSliderStyle}" Height="260"
+                                        HorizontalAlignment="Center" ValueChanged="TrackSepSlider_ValueChanged"/>
+                                <TextBlock x:Name="TrackSepVoiceValueLabel" Grid.Row="0" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Drums" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                <Slider x:Name="TrackSepDrumsSlider" Grid.Row="1" Grid.Column="1" Style="{StaticResource TrackSepSliderStyle}" Height="260"
+                                        HorizontalAlignment="Center" ValueChanged="TrackSepSlider_ValueChanged"/>
+                                <TextBlock x:Name="TrackSepDrumsValueLabel" Grid.Row="1" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Bass" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                <Slider x:Name="TrackSepBassSlider" Grid.Row="2" Grid.Column="1" Style="{StaticResource TrackSepSliderStyle}" Height="260"
+                                        HorizontalAlignment="Center" ValueChanged="TrackSepSlider_ValueChanged"/>
+                                <TextBlock x:Name="TrackSepBassValueLabel" Grid.Row="2" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Guitar" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center"/>
+                                <Slider x:Name="TrackSepGuitarSlider" Grid.Row="3" Grid.Column="1" Style="{StaticResource TrackSepSliderStyle}" Height="260"
+                                        HorizontalAlignment="Center" ValueChanged="TrackSepSlider_ValueChanged"/>
+                                <TextBlock x:Name="TrackSepGuitarValueLabel" Grid.Row="3" Grid.Column="2" Text="0%" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock x:Name="TrackSepTrackLabel" Grid.Row="2" Text="No track loaded" Foreground="#AAAAAA" FontSize="11"
+                                   TextTrimming="CharacterEllipsis" Margin="0,12,0,0"/>
+
+                        <TextBlock x:Name="TrackSepStatusLabel" Grid.Row="3" Text="" Foreground="#6FBF6F" FontSize="11" Margin="0,4,0,0"/>
+
+                        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                            <Button x:Name="TrackSepSaveButton" Content="Save as MP3..." Padding="12,4" Click="TrackSepSaveButton_Click"/>
+                        </StackPanel>
                     </Grid>
                 </TabItem>
 
