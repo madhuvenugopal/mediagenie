@@ -73,6 +73,7 @@ public partial class MainWindow : Window
     private Slider[] _trackSepSliders = Array.Empty<Slider>();
     private TextBlock[] _trackSepValueLabels = Array.Empty<TextBlock>();
     private bool _exportingTrackSeparation;
+    private bool _aiSeparating;
 
     // Default is Fire -- matches the controls' own default Visibility in XAML (Oscilloscope
     // visible, OscilloscopeSpectrum/OscilloscopeOffPanel collapsed).
@@ -1265,6 +1266,66 @@ public partial class MainWindow : Window
         {
             _exportingTrackSeparation = false;
             TrackSepSaveButton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>
+    /// Runs the real neural separator (see AiVocalSeparator) on the currently loaded Audio-tab
+    /// track and adds whatever it produces (typically a Vocals file and an Instrumental file)
+    /// straight to the Audio tab's file list, the same way a finished voice recording is -- so
+    /// the karaoke/instrumental result is immediately playable, not just saved to disk somewhere.
+    /// </summary>
+    private async void AiSeparateButton_Click(object sender, RoutedEventArgs e)
+    {
+        var currentFilePath = _audioEngine.CurrentFilePath;
+        if (_aiSeparating || string.IsNullOrEmpty(currentFilePath)) return;
+
+        var outputDir = Path.Combine(Path.GetDirectoryName(currentFilePath) ?? Environment.CurrentDirectory, "Separated");
+
+        _aiSeparating = true;
+        AiSeparateButton.IsEnabled = false;
+        AiSeparateStatusLabel.Foreground = System.Windows.Media.Brushes.LightGray;
+        AiSeparateStatusLabel.Text = "Separating with AI... this can take a few minutes, longer the first time while it downloads a model.";
+
+        try
+        {
+            Directory.CreateDirectory(outputDir);
+            await AiVocalSeparator.SeparateAsync(currentFilePath, outputDir);
+
+            // audio-separator names its output "<basename>_(Vocals)_<model>.<ext>" etc. -- the
+            // model name suffix varies by whichever model it picked, so match on the prefix
+            // rather than the search-pattern wildcards (which don't handle the literal "(" well).
+            var baseName = Path.GetFileNameWithoutExtension(currentFilePath);
+            var producedPrefix = baseName + "_(";
+            var produced = Directory.GetFiles(outputDir)
+                .Where(f => Path.GetFileName(f).StartsWith(producedPrefix, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (produced.Count == 0)
+            {
+                AiSeparateStatusLabel.Foreground = System.Windows.Media.Brushes.IndianRed;
+                AiSeparateStatusLabel.Text = $"Separation finished, but no output files were found in {outputDir}.";
+                return;
+            }
+
+            AddAudioFiles(produced);
+            AiSeparateStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6F, 0xBF, 0x6F));
+            AiSeparateStatusLabel.Text = $"Done -- added {produced.Count} file(s) to the Audio tab.";
+        }
+        catch (AudioSeparatorNotFoundException ex)
+        {
+            AiSeparateStatusLabel.Foreground = System.Windows.Media.Brushes.IndianRed;
+            AiSeparateStatusLabel.Text = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            AiSeparateStatusLabel.Foreground = System.Windows.Media.Brushes.IndianRed;
+            AiSeparateStatusLabel.Text = $"Separation failed: {ex.Message}";
+        }
+        finally
+        {
+            _aiSeparating = false;
+            AiSeparateButton.IsEnabled = true;
         }
     }
 

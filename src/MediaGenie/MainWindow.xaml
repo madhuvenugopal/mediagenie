@@ -779,6 +779,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Text="Track Separation" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -831,6 +832,24 @@
                         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                             <Button x:Name="TrackSepSaveButton" Content="Save as MP3..." Padding="12,4" Click="TrackSepSaveButton_Click"/>
                         </StackPanel>
+
+                        <!-- The sliders above are a cheap DSP approximation (frequency-band cuts,
+                             see InstrumentBandReducerSampleProvider) that can't cleanly tell voice
+                             apart from other center-panned content. This shells out to the
+                             external audio-separator tool instead, which wraps an actual trained
+                             separation model, genuinely better quality, but offline only (no
+                             live preview) and requires Python + audio-separator installed. -->
+                        <Border Grid.Row="5" Background="#252526" BorderBrush="#3F3F46" BorderThickness="1" Padding="16" Margin="0,20,0,0">
+                            <StackPanel>
+                                <TextBlock Text="AI Vocal Separation (higher quality)" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Uses the audio-separator tool to actually isolate vocals from the rest of the mix, rather than approximating it with the sliders above. Requires Python, with audio-separator installed (pip install &quot;audio-separator[cpu]&quot;)."
+                                           Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="AiSeparateButton" Content="Separate with AI..." Padding="12,4" Click="AiSeparateButton_Click"/>
+                                    <TextBlock x:Name="AiSeparateStatusLabel" Text="" Foreground="#6FBF6F" FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </TabItem>
 
